@@ -25,6 +25,7 @@ import type {
   IntTrophyId,
   TeamSlug,
 } from '../config/seasonDataConfig'
+import { apiUrl } from '../lib/api'
 
 const STEPS = [
   'Team',
@@ -168,23 +169,23 @@ export default function SeasonDataPage() {
       const base = { season: season.trim(), team }
       for (const row of clubRows) {
         if (row.apps > 0 || row.goals > 0 || row.assists > 0 || row.avgrating > 0) {
-          await postJson('/api/season_data', { ...base, ...row })
+          await postJson(apiUrl('/api/season_data'), { ...base, ...row })
         }
       }
       for (const t of clubTrophies) {
-        await postJson('/api/season_trophies', { season: season.trim(), competition: t })
+        await postJson(apiUrl('/api/season_trophies'), { season: season.trim(), competition: t })
       }
       for (const row of intRows) {
         if (row.apps > 0 || row.goals > 0 || row.assists > 0 || row.avgrating > 0) {
-          await postJson('/api/int_data', { season: season.trim(), ...row })
+          await postJson(apiUrl('/api/int_data'), { season: season.trim(), ...row })
         }
       }
       for (const t of intTrophies) {
-        await postJson('/api/int_trophies', { season: season.trim(), competition: t })
+        await postJson(apiUrl('/api/int_trophies'), { season: season.trim(), competition: t })
       }
       for (const a of awards) {
         if (a.award.trim()) {
-          await postJson('/api/season_awards', {
+          await postJson(apiUrl('/api/season_awards'), {
             season: season.trim(),
             award: a.award.trim(),
             quantity: a.quantity,

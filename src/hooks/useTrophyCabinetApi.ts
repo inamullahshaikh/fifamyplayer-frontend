@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { SeasonDataRow, TrophyRow } from "../types/dashboard";
+import { apiUrl } from "../lib/api";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url);
@@ -34,9 +35,9 @@ export function useTrophyCabinetApi(): TrophyCabinetApiState {
       setState((s) => ({ ...s, loading: true, error: null }));
       try {
         const [seasonRaw, clubRaw, intRaw] = await Promise.all([
-          fetchJson<SeasonDataRow[]>("/api/season_data"),
-          fetchJson<TrophyRow[]>("/api/season_trophies"),
-          fetchJson<TrophyRow[]>("/api/int_trophies"),
+          fetchJson<SeasonDataRow[]>(apiUrl("/api/season_data")),
+          fetchJson<TrophyRow[]>(apiUrl("/api/season_trophies")),
+          fetchJson<TrophyRow[]>(apiUrl("/api/int_trophies")),
         ]);
         if (cancelled) return;
         setState({

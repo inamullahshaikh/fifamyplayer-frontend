@@ -13,12 +13,13 @@ import {
 } from 'recharts'
 import { normalizeYearlyData } from '../lib/dashboardAggregates'
 import { useChartTheme } from '../hooks/useChartTheme'
+import { apiUrl } from '../lib/api'
 import type { YearlyDataRow } from '../types/dashboard'
 
 const GOALS_COLOR = '#2563eb'
 const ASSISTS_COLOR = '#0ea5e9'
 
-const API = '/api/yearly_data'
+const API = apiUrl('/api/yearly_data')
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url)

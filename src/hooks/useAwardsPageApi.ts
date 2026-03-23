@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { AwardRow, SeasonDataRow } from "../types/dashboard";
+import { apiUrl } from "../lib/api";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url);
@@ -31,8 +32,8 @@ export function useAwardsPageApi(): AwardsPageApiState {
       setState((s) => ({ ...s, loading: true, error: null }));
       try {
         const [awardsRaw, seasonRaw] = await Promise.all([
-          fetchJson<AwardRow[]>("/api/season_awards"),
-          fetchJson<SeasonDataRow[]>("/api/season_data"),
+          fetchJson<AwardRow[]>(apiUrl("/api/season_awards")),
+          fetchJson<SeasonDataRow[]>(apiUrl("/api/season_data")),
         ]);
         if (cancelled) return;
         setState({

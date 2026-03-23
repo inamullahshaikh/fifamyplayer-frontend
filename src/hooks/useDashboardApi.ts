@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { aggregateSeasonGoalsAssists, normalizeYearlyData, totalAwards } from '../lib/dashboardAggregates'
+import { apiUrl } from '../lib/api'
 import type {
   AwardRow,
   SeasonChartPoint,
@@ -45,11 +46,11 @@ export function useDashboardApi(): DashboardApiState {
       setState((s) => ({ ...s, loading: true, error: null }))
       try {
         const [seasonRaw, yearlyRaw, clubT, intT, awardsRaw] = await Promise.all([
-          fetchJson<SeasonDataRow[]>('/api/season_data'),
-          fetchJson<YearlyDataRow[]>('/api/yearly_data'),
-          fetchJson<TrophyRow[]>('/api/season_trophies'),
-          fetchJson<TrophyRow[]>('/api/int_trophies'),
-          fetchJson<AwardRow[]>('/api/season_awards'),
+          fetchJson<SeasonDataRow[]>(apiUrl('/api/season_data')),
+          fetchJson<YearlyDataRow[]>(apiUrl('/api/yearly_data')),
+          fetchJson<TrophyRow[]>(apiUrl('/api/season_trophies')),
+          fetchJson<TrophyRow[]>(apiUrl('/api/int_trophies')),
+          fetchJson<AwardRow[]>(apiUrl('/api/season_awards')),
         ])
 
         if (cancelled) return
