@@ -11,10 +11,10 @@ import {
   statsByYear,
 } from '../lib/statsAggregates'
 import type { AwardRow, IntDataRow, SeasonDataRow, TrophyRow, YearlyDataRow } from '../types/dashboard'
-import { apiUrl } from '../lib/api'
+import { apiFetch } from '../lib/api'
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url)
+  const res = await apiFetch(url)
   if (!res.ok) throw new Error('Request failed')
   return res.json() as Promise<T>
 }
@@ -69,12 +69,12 @@ export function useStatsApi(): StatsApiState {
       setState((s) => ({ ...s, loading: true, error: null }))
       try {
         const [clubRaw, intRaw, yearlyRaw, clubT, intT, awardsRaw] = await Promise.all([
-          fetchJson<SeasonDataRow[]>(apiUrl('/api/season_data')),
-          fetchJson<IntDataRow[]>(apiUrl('/api/int_data')),
-          fetchJson<YearlyDataRow[]>(apiUrl('/api/yearly_data')),
-          fetchJson<TrophyRow[]>(apiUrl('/api/season_trophies')),
-          fetchJson<TrophyRow[]>(apiUrl('/api/int_trophies')),
-          fetchJson<AwardRow[]>(apiUrl('/api/season_awards')),
+          fetchJson<SeasonDataRow[]>('/api/season_data'),
+          fetchJson<IntDataRow[]>('/api/int_data'),
+          fetchJson<YearlyDataRow[]>('/api/yearly_data'),
+          fetchJson<TrophyRow[]>('/api/season_trophies'),
+          fetchJson<TrophyRow[]>('/api/int_trophies'),
+          fetchJson<AwardRow[]>('/api/season_awards'),
         ])
 
         if (cancelled) return

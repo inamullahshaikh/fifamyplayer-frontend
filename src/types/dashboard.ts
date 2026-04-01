@@ -1,3 +1,21 @@
+export type PlayerRow = {
+  _id?: string
+  name?: string
+  rating?: string | number
+  nationality?: string
+  position?: string
+  value?: number | string
+  retired?: boolean
+}
+
+export type TransferRow = {
+  _id?: string
+  season?: string
+  from?: string
+  to?: string
+  value?: string
+}
+
 export type SeasonDataRow = {
   _id?: string
   season?: string

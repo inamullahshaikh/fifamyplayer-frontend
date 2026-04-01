@@ -68,8 +68,8 @@ export default function LandingPage() {
 
           <ThemeToggle buttonClassName="nav-theme" />
 
-          <Link className="nav-cta" to="/dashboard">
-            Dashboard
+          <Link className="nav-cta" to="/login">
+            Login
           </Link>
         </div>
       </nav>

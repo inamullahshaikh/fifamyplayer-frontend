@@ -21,3 +21,66 @@ export function apiUrl(path: string): string {
   return `${normalizedBase}${normalizedPath}`
 }
 
+export type AuthUser = {
+  id: string
+  username: string
+}
+
+export type AuthResponse = {
+  token: string
+  user: AuthUser
+}
+
+const AUTH_TOKEN_KEY = 'vx-auth-token'
+const AUTH_USER_KEY = 'vx-auth-user'
+
+export function getAuthToken(): string {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+
+export function setAuthSession(token: string, user: AuthUser): void {
+  try {
+    localStorage.setItem(AUTH_TOKEN_KEY, token)
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user))
+  } catch {
+    // ignore storage failures
+  }
+}
+
+export function getStoredUser(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem(AUTH_USER_KEY)
+    if (!raw) return null
+    return JSON.parse(raw) as AuthUser
+  } catch {
+    return null
+  }
+}
+
+export function clearAuthSession(): void {
+  try {
+    localStorage.removeItem(AUTH_TOKEN_KEY)
+    localStorage.removeItem(AUTH_USER_KEY)
+  } catch {
+    // ignore storage failures
+  }
+}
+
+export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers || {})
+  const token = getAuthToken()
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  const res = await fetch(apiUrl(path), {
+    ...init,
+    headers,
+  })
+  return res
+}
+

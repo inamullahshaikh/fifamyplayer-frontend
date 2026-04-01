@@ -211,12 +211,23 @@ export default function StatsPage() {
   if (api.error) {
     return (
       <section className="dash-view dash-stats">
-        <header className="stats-page-header">
-          <span className="stats-eyebrow">Career</span>
-          <h1 className="stats-page-title">Stats</h1>
-          <p className="stats-page-desc">
-            Complete career statistics and breakdowns.
-          </p>
+        <header className="ph ph--stats">
+          <div className="ph-glow" aria-hidden />
+          <div className="ph-inner">
+            <div className="ph-text">
+              <p className="ph-kicker"><span className="ph-kicker-dot" aria-hidden />Career Analytics</p>
+              <h1 className="ph-title">Stats</h1>
+              <p className="ph-desc">Complete career statistics and breakdowns.</p>
+            </div>
+            <svg className="ph-deco" aria-hidden viewBox="0 0 200 130" fill="none">
+              <rect x="10"  y="80" width="22" height="42" rx="4" fill="currentColor" fillOpacity="0.15" />
+              <rect x="42"  y="55" width="22" height="67" rx="4" fill="currentColor" fillOpacity="0.2"  />
+              <rect x="74"  y="35" width="22" height="87" rx="4" fill="currentColor" fillOpacity="0.25" />
+              <rect x="106" y="60" width="22" height="62" rx="4" fill="currentColor" fillOpacity="0.2"  />
+              <rect x="138" y="20" width="22" height="102" rx="4" fill="currentColor" fillOpacity="0.3" />
+              <rect x="170" y="45" width="22" height="77"  rx="4" fill="currentColor" fillOpacity="0.22" />
+            </svg>
+          </div>
         </header>
         <div className="stats-alert stats-alert--error" role="alert">
           {api.error}
@@ -227,13 +238,48 @@ export default function StatsPage() {
 
   return (
     <section className="dash-view dash-stats">
-      <header className="stats-page-header">
-        <span className="stats-eyebrow">Career</span>
-        <h1 className="stats-page-title">Stats</h1>
-        <p className="stats-page-desc">
-          Full career picture: club & international totals, season and year
-          breakdowns, competitions, teams, and highlights.
-        </p>
+      <header className="ph ph--stats">
+        <div className="ph-glow" aria-hidden />
+        <div className="ph-inner">
+          <div className="ph-text">
+            <p className="ph-kicker"><span className="ph-kicker-dot" aria-hidden />Career Analytics</p>
+            <h1 className="ph-title">Stats</h1>
+            <p className="ph-desc">
+              Full career picture: club &amp; international totals, season and year breakdowns, competitions, teams, and highlights.
+            </p>
+          </div>
+          <svg className="ph-deco" aria-hidden viewBox="0 0 200 130" fill="none">
+            <rect x="10"  y="80" width="22" height="42" rx="4" fill="currentColor" fillOpacity="0.15" />
+            <rect x="42"  y="55" width="22" height="67" rx="4" fill="currentColor" fillOpacity="0.2"  />
+            <rect x="74"  y="35" width="22" height="87" rx="4" fill="currentColor" fillOpacity="0.25" />
+            <rect x="106" y="60" width="22" height="62" rx="4" fill="currentColor" fillOpacity="0.2"  />
+            <rect x="138" y="20" width="22" height="102" rx="4" fill="currentColor" fillOpacity="0.3" />
+            <rect x="170" y="45" width="22" height="77"  rx="4" fill="currentColor" fillOpacity="0.22" />
+          </svg>
+        </div>
+        {!api.loading && (
+          <div className="ph-bottom">
+            <div className="ph-stat">
+              <span className="ph-stat-n">{api.overview.apps}</span>
+              <span className="ph-stat-l">Appearances</span>
+            </div>
+            <span className="ph-div" aria-hidden />
+            <div className="ph-stat">
+              <span className="ph-stat-n">{api.overview.goals}</span>
+              <span className="ph-stat-l">Goals</span>
+            </div>
+            <span className="ph-div" aria-hidden />
+            <div className="ph-stat">
+              <span className="ph-stat-n">{api.overview.assists}</span>
+              <span className="ph-stat-l">Assists</span>
+            </div>
+            <span className="ph-div" aria-hidden />
+            <div className="ph-stat">
+              <span className="ph-stat-n">{api.byCompetition.length}</span>
+              <span className="ph-stat-l">Competitions</span>
+            </div>
+          </div>
+        )}
       </header>
 
       <nav className="stats-tabs" aria-label="Stats sections">

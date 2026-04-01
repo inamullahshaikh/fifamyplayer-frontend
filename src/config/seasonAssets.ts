@@ -60,8 +60,7 @@ import ligue1Logo from '../assets/images/logos/ligue-1.png'
 import coupeFranceLogo from '../assets/images/logos/Coupe-de-France.png'
 import tropheeChampionsLogo from '../assets/images/logos/Trophee-des-Champions.png'
 
-// National team logos (for international section)
-import spainLogo from '../assets/images/Spain.png'
+import { getFlagUrlByCode, toNationalityCode } from './nationalities'
 
 // International competition logos
 import euroLogo from '../assets/images/logos/euro.png'
@@ -69,6 +68,13 @@ import worldCupLogo from '../assets/images/logos/world-cup.png'
 import euroQualLogo from '../assets/images/logos/euro-qual.png'
 import worldCupQualLogo from '../assets/images/logos/world-cup-qual.png'
 import friendliesLogo from '../assets/images/logos/international-friendlies.png'
+import finalissimaLogo from '../assets/images/logos/finalissima.png'
+import copaAmericaLogo from '../assets/images/logos/Copa-America.png'
+import conmebolLogo from '../assets/images/logos/conmebol.png'
+import goldCupLogo from '../assets/images/logos/concacaf gold cup.png'
+import concacafNationsLeagueLogo from '../assets/images/logos/CONCACAF Nations League.png'
+import afcAsianCupLogo from '../assets/images/logos/AFC_Asian_Cup.png'
+import afconLogo from '../assets/images/logos/afcon.png'
 
 // Award logos
 import ballonDorLogo from '../assets/images/logos/ballon-dor.png'
@@ -77,15 +83,11 @@ import fifaBestLogo from '../assets/images/logos/fifa-the best.png'
 
 import type { ClubCompetitionId, ClubTrophyId, IntCompetitionId, IntTrophyId } from './seasonDataConfig'
 
-/** Nationality (e.g. "Spain") → nation/flag image. */
-export const NATION_IMAGES: Record<string, string> = {
-  spain: spainLogo,
-}
-
 export function getNationImage(nationality: string): string | undefined {
   if (!nationality) return undefined
-  const key = String(nationality).toLowerCase().replace(/\s+/g, '-')
-  return NATION_IMAGES[key]
+  const code = toNationalityCode(nationality)
+  if (!code) return undefined
+  return getFlagUrlByCode(code, 64)
 }
 
 export const TEAM_IMAGES: Record<string, string> = {
@@ -172,18 +174,33 @@ export const CLUB_TROPHY_IMAGES: Record<ClubTrophyId, string> = {
 }
 
 export const INT_COMPETITION_IMAGES: Record<IntCompetitionId, string> = {
-  'euro': euroLogo,
-  'wc': worldCupLogo,
-  'unl': euroQualLogo, // Nations League - reuse euro qual logo
-  'euq': euroQualLogo,
-  'wcq': worldCupQualLogo,
   'friendly': friendliesLogo,
+  'wcq': worldCupQualLogo,
+  'wc': worldCupLogo,
+  'finalissima': finalissimaLogo,
+  'euro': euroLogo,
+  'euq': euroQualLogo,
+  'unl': euroQualLogo, // UEFA Nations League — no dedicated asset yet
+  'copa-america': copaAmericaLogo,
+  'conmebol-qualifiers': conmebolLogo,
+  'gold-cup': goldCupLogo,
+  'concacaf-nations-league': concacafNationsLeagueLogo,
+  'asian-cup': afcAsianCupLogo,
+  'asian-cup-qualifiers': afcAsianCupLogo,
+  'afcon': afconLogo,
+  'afcon-qualifiers': afconLogo,
+  'ofc-nations-cup': worldCupLogo, // no OFC asset in logos folder yet
 }
 
 export const INT_TROPHY_IMAGES: Record<IntTrophyId, string> = {
   'european-championship': euroLogo,
   'world-cup': worldCupLogo,
-  'nations-league': euroQualLogo, // Nations League - reuse euro qual logo
+  'nations-league': euroQualLogo, // UEFA Nations League — no dedicated asset yet
+  'copa-america': copaAmericaLogo,
+  'gold-cup': goldCupLogo,
+  'asian-cup': afcAsianCupLogo,
+  'afcon': afconLogo,
+  'ofc-nations-cup': worldCupLogo,
 }
 
 /** Only Ballon d&apos;Or, Golden Boot, and FIFA Best use logo assets from `assets/images/logos/`. */

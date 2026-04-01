@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   CLUB_COMPETITION_IMAGES,
   CLUB_TROPHY_IMAGES,
@@ -25,7 +25,8 @@ import type {
   IntTrophyId,
   TeamSlug,
 } from '../config/seasonDataConfig'
-import { apiUrl } from '../lib/api'
+import { apiFetch } from '../lib/api'
+import { getConfederationByCode, getNationalityLabel, toNationalityCode } from '../config/nationalities'
 
 const STEPS = [
   'Team',
@@ -54,9 +55,10 @@ type IntCompetitionRow = {
 }
 
 type AwardRow = { award: string; quantity: number }
+type PlayerProfile = { _id?: string; nationality?: string }
 
 async function postJson(url: string, body: object) {
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -68,9 +70,34 @@ async function postJson(url: string, body: object) {
   return res.json()
 }
 
+async function fetchJson<T>(url: string): Promise<T> {
+  const res = await apiFetch(url)
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+  return res.json() as Promise<T>
+}
+
+const COMPETITION_SETS = {
+  UEFA: ['friendly', 'wcq', 'wc', 'finalissima', 'euro', 'euq', 'unl'],
+  CONMEBOL: ['friendly', 'wcq', 'wc', 'finalissima', 'copa-america', 'conmebol-qualifiers'],
+  CONCACAF: ['friendly', 'wcq', 'wc', 'gold-cup', 'concacaf-nations-league'],
+  AFC: ['friendly', 'wcq', 'wc', 'asian-cup', 'asian-cup-qualifiers'],
+  CAF: ['friendly', 'wcq', 'wc', 'afcon', 'afcon-qualifiers'],
+  OFC: ['friendly', 'wcq', 'wc', 'ofc-nations-cup'],
+} as const
+
+const TROPHY_SETS = {
+  UEFA: ['world-cup', 'european-championship', 'nations-league'],
+  CONMEBOL: ['world-cup', 'copa-america'],
+  CONCACAF: ['world-cup', 'gold-cup'],
+  AFC: ['world-cup', 'asian-cup'],
+  CAF: ['world-cup', 'afcon'],
+  OFC: ['world-cup', 'ofc-nations-cup'],
+} as const
+
 export default function SeasonDataPage() {
   const [step, setStep] = useState(0)
   const [team, setTeam] = useState<TeamSlug | ''>('')
+  const [playerNationality, setPlayerNationality] = useState('')
   const [season, setSeason] = useState('')
   const [seasonError, setSeasonError] = useState('')
   const [clubRows, setClubRows] = useState<ClubCompetitionRow[]>([])
@@ -89,6 +116,64 @@ export default function SeasonDataPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    async function loadPlayerNationality() {
+      try {
+        const rows = await fetchJson<PlayerProfile[]>('/api/players')
+        if (cancelled) return
+        if (Array.isArray(rows) && rows.length > 0 && rows[0]?.nationality) {
+          setPlayerNationality(String(rows[0].nationality))
+        }
+      } catch {
+        // Optional context only; do not block form on failure.
+      }
+    }
+    loadPlayerNationality()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const nationalityCode = toNationalityCode(playerNationality)
+  const nationalityLabel = playerNationality ? getNationalityLabel(playerNationality) : ''
+  const confederation = nationalityCode ? getConfederationByCode(nationalityCode) : undefined
+
+  const availableIntCompetitions = useMemo(
+    () => {
+      if (!confederation) return INT_COMPETITIONS
+      const ids = new Set<string>(COMPETITION_SETS[confederation])
+      return INT_COMPETITIONS.filter((c) => ids.has(c.id))
+    },
+    [confederation]
+  )
+
+  const availableIntTrophies = useMemo(
+    () => {
+      if (!confederation) return INT_TROPHIES
+      const ids = new Set<string>(TROPHY_SETS[confederation])
+      return INT_TROPHIES.filter((t) => ids.has(t.id))
+    },
+    [confederation]
+  )
+
+  useEffect(() => {
+    setIntRows((prev) =>
+      availableIntCompetitions.map((c) => {
+        const existing = prev.find((p) => p.competition === c.id)
+        return (
+          existing ?? {
+            competition: c.id,
+            apps: 0,
+            goals: 0,
+            assists: 0,
+            avgrating: 0,
+          }
+        )
+      })
+    )
+    setIntTrophies((prev) => prev.filter((id) => availableIntTrophies.some((t) => t.id === id)))
+  }, [availableIntCompetitions, availableIntTrophies])
 
   const clubComps = team ? (TEAM_CLUB_COMPETITIONS[team] ?? []) : []
 
@@ -169,23 +254,23 @@ export default function SeasonDataPage() {
       const base = { season: season.trim(), team }
       for (const row of clubRows) {
         if (row.apps > 0 || row.goals > 0 || row.assists > 0 || row.avgrating > 0) {
-          await postJson(apiUrl('/api/season_data'), { ...base, ...row })
+          await postJson('/api/season_data', { ...base, ...row })
         }
       }
       for (const t of clubTrophies) {
-        await postJson(apiUrl('/api/season_trophies'), { season: season.trim(), competition: t })
+        await postJson('/api/season_trophies', { season: season.trim(), competition: t })
       }
       for (const row of intRows) {
         if (row.apps > 0 || row.goals > 0 || row.assists > 0 || row.avgrating > 0) {
-          await postJson(apiUrl('/api/int_data'), { season: season.trim(), ...row })
+          await postJson('/api/int_data', { season: season.trim(), ...row })
         }
       }
       for (const t of intTrophies) {
-        await postJson(apiUrl('/api/int_trophies'), { season: season.trim(), competition: t })
+        await postJson('/api/int_trophies', { season: season.trim(), competition: t })
       }
       for (const a of awards) {
         if (a.award.trim()) {
-          await postJson(apiUrl('/api/season_awards'), {
+          await postJson('/api/season_awards', {
             season: season.trim(),
             award: a.award.trim(),
             quantity: a.quantity,
@@ -213,7 +298,7 @@ export default function SeasonDataPage() {
     setSaveError(null)
     if (team) initClubRows(team)
     setIntRows(
-      INT_COMPETITIONS.map((c) => ({
+      availableIntCompetitions.map((c) => ({
         competition: c.id,
         apps: 0,
         goals: 0,
@@ -226,27 +311,53 @@ export default function SeasonDataPage() {
 
   return (
     <section className="dash-view dash-season-data">
-      <header className="season-page-header">
-        <span className="season-eyebrow">Career data</span>
-        <h1 className="season-page-title">Season data</h1>
-        <p className="season-page-desc">
-          Walk through each step to record club stats, trophies, international play, and awards for one season.
-        </p>
+      <header className="ph ph--season">
+        <div className="ph-glow" aria-hidden />
+        <div className="ph-inner">
+          <div className="ph-text">
+            <p className="ph-kicker">
+              <span className="ph-kicker-dot" aria-hidden />
+              Season Builder
+            </p>
+            <h1 className="ph-title">Season Data</h1>
+            <p className="ph-desc">
+              Log club stats, trophies, international play, and awards — one step at a time.
+            </p>
+          </div>
+          <svg className="ph-deco" aria-hidden viewBox="0 0 200 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="26"  cy="65" r="18" fill="currentColor" fillOpacity="0.12" />
+            <circle cx="26"  cy="65" r="10" fill="currentColor" fillOpacity="0.2"  />
+            <line x1="44" y1="65" x2="76" y2="65" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2" strokeDasharray="4 3" />
+            <circle cx="94"  cy="65" r="18" fill="currentColor" fillOpacity="0.12" />
+            <circle cx="94"  cy="65" r="10" fill="currentColor" fillOpacity="0.2"  />
+            <line x1="112" y1="65" x2="144" y2="65" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2" strokeDasharray="4 3" />
+            <circle cx="162" cy="65" r="18" fill="currentColor" fillOpacity="0.12" />
+            <circle cx="162" cy="65" r="10" fill="currentColor" fillOpacity="0.2"  />
+            <line x1="180" y1="65" x2="196" y2="65" stroke="currentColor" strokeOpacity="0.2" strokeWidth="2" strokeDasharray="4 3" />
+            <text x="18" y="100" fontSize="9" fill="currentColor" fillOpacity="0.35">Club</text>
+            <text x="79" y="100" fontSize="9" fill="currentColor" fillOpacity="0.35">Int.</text>
+            <text x="145" y="100" fontSize="9" fill="currentColor" fillOpacity="0.35">Trophies</text>
+          </svg>
+        </div>
+
         {showContext && (
-          <div className="season-context-pill" role="status">
+          <div className="ph-context" role="status">
             {TEAM_IMAGES[team] && (
-              <img src={TEAM_IMAGES[team]} alt="" className="season-context-img" width={28} height={28} />
+              <img src={TEAM_IMAGES[team]} alt="" className="ph-context-img" width={24} height={24} />
             )}
-            <span className="season-context-text">{selectedTeamLabel} · {season.trim()}</span>
+            <span>{selectedTeamLabel} · {season.trim()}</span>
           </div>
         )}
-        <div className="season-progress" aria-hidden>
-          <div className="season-progress-bar" style={{ width: `${progressPct}%` }} />
+
+        <div className="ph-progress-wrap">
+          <div className="ph-progress-bar-outer" aria-hidden>
+            <div className="ph-progress-bar-inner" style={{ width: `${progressPct}%` }} />
+          </div>
+          <p className="ph-progress-label">
+            Step <strong className="ph-progress-step">{step + 1}</strong> of {STEPS.length}
+            <span className="ph-progress-name"> · {STEPS[step]}</span>
+          </p>
         </div>
-        <p className="season-progress-label">
-          Step <strong>{step + 1}</strong> of {STEPS.length}
-          <span className="season-progress-name"> · {STEPS[step]}</span>
-        </p>
       </header>
 
       <div className="season-stepper-wrap">
@@ -420,7 +531,8 @@ export default function SeasonDataPage() {
           <div className="season-step-panel">
             <h3 className="season-panel-title">International competitions</h3>
             <p className="season-panel-sub muted-text">
-              Enter stats for national team competitions.
+              Enter stats for national team competitions
+              {nationalityLabel ? ` (${nationalityLabel})` : ''}.
               <span className="season-optional-hint"> Leave blank if you didn&apos;t play internationally.</span>
             </p>
             <div className="season-comp-grid">
@@ -432,7 +544,7 @@ export default function SeasonDataPage() {
                       alt=""
                       className="season-comp-logo"
                     />
-                    <span className="season-comp-name">{INT_COMPETITIONS.find((c) => c.id === row.competition)?.label}</span>
+                    <span className="season-comp-name">{availableIntCompetitions.find((c) => c.id === row.competition)?.label}</span>
                   </div>
                   <div className="season-comp-stats">
                     <label className="season-comp-stat">
@@ -483,11 +595,12 @@ export default function SeasonDataPage() {
           <div className="season-step-panel">
             <h3 className="season-panel-title">International trophies won</h3>
             <p className="season-panel-sub muted-text">
-              Select international trophies won this season.
+              Select international trophies won this season
+              {nationalityLabel ? ` (${nationalityLabel})` : ''}.
               <span className="season-optional-hint"> Skip if none.</span>
             </p>
             <div className="season-check-grid">
-              {INT_TROPHIES.map((t) => (
+              {availableIntTrophies.map((t) => (
                 <label key={t.id} className={'season-check-card' + (intTrophies.includes(t.id) ? ' season-check-card--on' : '')}>
                   <input
                     type="checkbox"

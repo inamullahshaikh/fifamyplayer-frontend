@@ -13,22 +13,22 @@ import {
 } from 'recharts'
 import { normalizeYearlyData } from '../lib/dashboardAggregates'
 import { useChartTheme } from '../hooks/useChartTheme'
-import { apiUrl } from '../lib/api'
+import { apiFetch } from '../lib/api'
 import type { YearlyDataRow } from '../types/dashboard'
 
 const GOALS_COLOR = '#2563eb'
 const ASSISTS_COLOR = '#0ea5e9'
 
-const API = apiUrl('/api/yearly_data')
+const API = '/api/yearly_data'
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url)
+  const res = await apiFetch(url)
   if (!res.ok) throw new Error(`Request failed: ${res.status}`)
   return res.json()
 }
 
 async function postJson(url: string, body: object) {
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -41,7 +41,7 @@ async function postJson(url: string, body: object) {
 }
 
 async function putJson(url: string, body: object) {
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -54,7 +54,7 @@ async function putJson(url: string, body: object) {
 }
 
 async function deleteJson(url: string) {
-  const res = await fetch(url, { method: 'DELETE' })
+  const res = await apiFetch(url, { method: 'DELETE' })
   if (!res.ok) throw new Error(`Delete failed: ${res.status}`)
 }
 
@@ -181,12 +181,57 @@ export default function YearlyDataPage() {
 
   return (
     <section className="dash-view dash-yearly-data">
-      <header className="yearly-page-header">
-        <span className="yearly-eyebrow">Career data</span>
-        <h1 className="yearly-page-title">Yearly data</h1>
-        <p className="yearly-page-desc">
-          Track your goals and assists by calendar year. Add each year to build your career overview.
-        </p>
+      <header className="ph ph--yearly">
+        <div className="ph-glow" aria-hidden />
+        <div className="ph-inner">
+          <div className="ph-text">
+            <p className="ph-kicker"><span className="ph-kicker-dot" aria-hidden />Progression</p>
+            <h1 className="ph-title">Yearly Data</h1>
+            <p className="ph-desc">
+              Track goals and assists by calendar year. Build your career arc from debut to peak.
+            </p>
+          </div>
+          <svg className="ph-deco" aria-hidden viewBox="0 0 200 130" fill="none">
+            <polyline
+              points="10,110 40,90 70,70 100,50 130,40 160,25 190,15"
+              stroke="currentColor" strokeWidth="3" strokeOpacity="0.35"
+              fill="none" strokeLinecap="round" strokeLinejoin="round"
+            />
+            <polyline
+              points="10,110 40,90 70,70 100,50 130,40 160,25 190,15"
+              stroke="currentColor" strokeWidth="10" strokeOpacity="0.05"
+              fill="none" strokeLinecap="round" strokeLinejoin="round"
+            />
+            <circle cx="10"  cy="110" r="5" fill="currentColor" fillOpacity="0.5" />
+            <circle cx="70"  cy="70"  r="5" fill="currentColor" fillOpacity="0.5" />
+            <circle cx="130" cy="40"  r="5" fill="currentColor" fillOpacity="0.5" />
+            <circle cx="190" cy="15"  r="6" fill="currentColor" fillOpacity="0.65" />
+            <line x1="10" y1="118" x2="190" y2="118" stroke="currentColor" strokeOpacity="0.1" strokeWidth="1" />
+          </svg>
+        </div>
+        {data.length > 0 && (
+          <div className="ph-bottom">
+            <div className="ph-stat">
+              <span className="ph-stat-n">{data.length}</span>
+              <span className="ph-stat-l">Years tracked</span>
+            </div>
+            <span className="ph-div" aria-hidden />
+            <div className="ph-stat">
+              <span className="ph-stat-n">{totalGoals}</span>
+              <span className="ph-stat-l">Total goals</span>
+            </div>
+            <span className="ph-div" aria-hidden />
+            <div className="ph-stat">
+              <span className="ph-stat-n">{totalAssists}</span>
+              <span className="ph-stat-l">Total assists</span>
+            </div>
+            <span className="ph-div" aria-hidden />
+            <div className="ph-stat">
+              <span className="ph-stat-n">{totalGoals + totalAssists}</span>
+              <span className="ph-stat-l">G+A combined</span>
+            </div>
+          </div>
+        )}
       </header>
 
       <div className="yearly-main">

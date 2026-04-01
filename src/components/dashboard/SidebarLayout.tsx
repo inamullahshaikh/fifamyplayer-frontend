@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../auth/AuthContext'
 import DashboardNavbar from './DashboardNavbar'
 import DashboardSidebar from './DashboardSidebar'
 import { IconMenu } from './SidebarNavIcons'
@@ -15,6 +16,7 @@ type SidebarLayoutProps = {
 
 export default function SidebarLayout({ children, navItems }: SidebarLayoutProps) {
   const navigate = useNavigate()
+  const { logout } = useAuth()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(() => {
@@ -47,9 +49,13 @@ export default function SidebarLayout({ children, navItems }: SidebarLayoutProps
   const toggleMobile = () => setMobileOpen((o) => !o)
   const closeMobile = () => setMobileOpen(false)
 
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
   return (
     <div className="dash-root">
-      {/* Mobile overlay */}
       <button
         type="button"
         className={'dash-backdrop' + (mobileOpen ? ' dash-backdrop--visible' : '')}
@@ -79,7 +85,7 @@ export default function SidebarLayout({ children, navItems }: SidebarLayoutProps
         >
           <DashboardSidebar
             items={navItems}
-            onLogout={() => navigate('/')}
+            onLogout={handleLogout}
             collapsed={collapsed}
             onToggleCollapse={() => setCollapsed((c) => !c)}
             onNavigate={closeMobile}
@@ -87,7 +93,7 @@ export default function SidebarLayout({ children, navItems }: SidebarLayoutProps
         </div>
 
         <div className="dash-content">
-          <DashboardNavbar items={navItems} onLogout={() => navigate('/')} />
+          <DashboardNavbar items={navItems} onLogout={handleLogout} />
           <main className="dash-main">{children}</main>
         </div>
       </div>

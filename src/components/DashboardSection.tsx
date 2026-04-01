@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { apiUrl } from '../lib/api'
+import { apiFetch } from '../lib/api'
 
 type Player = {
   _id: string
@@ -22,7 +22,7 @@ export default function DashboardSection() {
         setLoading(true)
         setError(null)
 
-        const res = await fetch(apiUrl('/api/players'))
+        const res = await apiFetch('/api/players')
         if (!res.ok) throw new Error(`Request failed: ${res.status}`)
 
         const data = (await res.json()) as Player[]

@@ -46,10 +46,32 @@ export type ClubTrophyId =
   | 'l1-trophy' | 'cdf-trophy' | 'tdc-trophy'
 
 export type IntCompetitionId =
-  | 'euro' | 'friendly' | 'wcq' | 'wc' | 'euq' | 'unl'  // unl = UEFA Nations League
+  | 'friendly'
+  | 'wcq'
+  | 'wc'
+  | 'finalissima'
+  | 'euro'
+  | 'euq'
+  | 'unl'
+  | 'copa-america'
+  | 'conmebol-qualifiers'
+  | 'gold-cup'
+  | 'concacaf-nations-league'
+  | 'asian-cup'
+  | 'asian-cup-qualifiers'
+  | 'afcon'
+  | 'afcon-qualifiers'
+  | 'ofc-nations-cup'
 
 export type IntTrophyId =
-  | 'european-championship' | 'world-cup' | 'nations-league'
+  | 'european-championship'
+  | 'world-cup'
+  | 'nations-league'
+  | 'copa-america'
+  | 'gold-cup'
+  | 'asian-cup'
+  | 'afcon'
+  | 'ofc-nations-cup'
 
 /** La Liga teams */
 const LA_LIGA_COMPETITIONS = [
@@ -230,12 +252,22 @@ export const CLUB_TROPHIES: { id: ClubTrophyId; label: string }[] = [
 
 /** International competitions. */
 export const INT_COMPETITIONS: { id: IntCompetitionId; label: string }[] = [
-  { id: 'euro', label: 'UEFA European Championship' },
-  { id: 'wc', label: 'FIFA World Cup' },
-  { id: 'unl', label: 'UEFA Nations League' },
-  { id: 'euq', label: 'Euro Qualifiers' },
-  { id: 'wcq', label: 'World Cup Qualifiers' },
   { id: 'friendly', label: 'Friendlies' },
+  { id: 'wcq', label: 'World Cup Qualifiers' },
+  { id: 'wc', label: 'FIFA World Cup' },
+  { id: 'finalissima', label: 'Finalissima' },
+  { id: 'euro', label: 'UEFA European Championship' },
+  { id: 'euq', label: 'Euro Qualifiers' },
+  { id: 'unl', label: 'UEFA Nations League' },
+  { id: 'copa-america', label: 'Copa America' },
+  { id: 'conmebol-qualifiers', label: 'CONMEBOL Qualifiers' },
+  { id: 'gold-cup', label: 'CONCACAF Gold Cup' },
+  { id: 'concacaf-nations-league', label: 'CONCACAF Nations League' },
+  { id: 'asian-cup', label: 'AFC Asian Cup' },
+  { id: 'asian-cup-qualifiers', label: 'AFC Asian Cup Qualifiers' },
+  { id: 'afcon', label: 'Africa Cup of Nations' },
+  { id: 'afcon-qualifiers', label: 'AFCON Qualifiers' },
+  { id: 'ofc-nations-cup', label: 'OFC Nations Cup' },
 ]
 
 /** Labels for competition IDs (club + international). */
@@ -257,6 +289,11 @@ export const INT_TROPHIES: { id: IntTrophyId; label: string }[] = [
   { id: 'european-championship', label: 'European Championship' },
   { id: 'world-cup', label: 'World Cup' },
   { id: 'nations-league', label: 'UEFA Nations League' },
+  { id: 'copa-america', label: 'Copa America' },
+  { id: 'gold-cup', label: 'CONCACAF Gold Cup' },
+  { id: 'asian-cup', label: 'AFC Asian Cup' },
+  { id: 'afcon', label: 'Africa Cup of Nations' },
+  { id: 'ofc-nations-cup', label: 'OFC Nations Cup' },
 ]
 
 /** Common awards for autocomplete/selection. */

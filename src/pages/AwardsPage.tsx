@@ -6,7 +6,7 @@ import {
 } from "../components/awards/AwardsPageVisuals";
 import { STATIC_PLAYER_PROFILE } from "../config/dashboardStatic";
 import { TEAM_LABELS } from "../config/seasonDataConfig";
-import { getNationImage, TEAM_IMAGES } from "../config/seasonAssets";
+import { AWARD_LOGO_KINDS, getNationImage, TEAM_IMAGES } from "../config/seasonAssets";
 import { useAwardsPageApi } from "../hooks/useAwardsPageApi";
 import type { AwardRow, SeasonDataRow } from "../types/dashboard";
 
@@ -140,12 +140,27 @@ export default function AwardsPage() {
   if (api.error) {
     return (
       <section className="dash-view trophy-cabinet awards-page">
-        <header className="trophy-cab-header">
-          <span className="trophy-cab-eyebrow">Career</span>
-          <h1 className="trophy-cab-title">Awards</h1>
-          <p className="trophy-cab-desc">
-            Individual honours across your career.
-          </p>
+        <header className="ph ph--awards">
+          <div className="ph-glow" aria-hidden />
+          <div className="ph-inner">
+            <div className="ph-text">
+              <p className="ph-kicker"><span className="ph-kicker-dot" aria-hidden />Individual Honours</p>
+              <h1 className="ph-title">Awards</h1>
+              <p className="ph-desc">Individual honours across your career.</p>
+            </div>
+            <svg className="ph-deco" aria-hidden viewBox="0 0 200 140" fill="none">
+              <circle cx="100" cy="65" r="50" fill="currentColor" fillOpacity="0.08" />
+              <circle cx="100" cy="65" r="32" fill="currentColor" fillOpacity="0.1"  />
+              <circle cx="100" cy="65" r="16" fill="currentColor" fillOpacity="0.15" />
+              <circle cx="100" cy="18" r="6"  fill="currentColor" fillOpacity="0.4"  />
+              <circle cx="145" cy="38" r="5"  fill="currentColor" fillOpacity="0.3"  />
+              <circle cx="155" cy="88" r="6"  fill="currentColor" fillOpacity="0.35" />
+              <circle cx="116" cy="116" r="4" fill="currentColor" fillOpacity="0.3"  />
+              <circle cx="62"  cy="112" r="5" fill="currentColor" fillOpacity="0.3"  />
+              <circle cx="46"  cy="68"  r="4" fill="currentColor" fillOpacity="0.3"  />
+              <circle cx="57"  cy="28"  r="5" fill="currentColor" fillOpacity="0.35" />
+            </svg>
+          </div>
         </header>
         <div className="trophy-cab-alert" role="alert">
           {api.error}
@@ -156,13 +171,42 @@ export default function AwardsPage() {
 
   return (
     <section className="dash-view trophy-cabinet awards-page">
-      <header className="trophy-cab-header">
-        <span className="trophy-cab-eyebrow">Career</span>
-        <h1 className="trophy-cab-title">Awards</h1>
-        <p className="trophy-cab-desc">
-          Ballon d&apos;Or, Golden Boot, FIFA Best, and every other individual
-          honour logged across your career.
-        </p>
+      <header className="ph ph--awards">
+        <div className="ph-glow" aria-hidden />
+        <div className="ph-inner">
+          <div className="ph-text">
+            <p className="ph-kicker"><span className="ph-kicker-dot" aria-hidden />Individual Honours</p>
+            <h1 className="ph-title">Awards</h1>
+            <p className="ph-desc">
+              Ballon d&apos;Or, Golden Boot, FIFA Best, and every other individual honour logged across your career.
+            </p>
+          </div>
+          <svg className="ph-deco" aria-hidden viewBox="0 0 200 140" fill="none">
+            <circle cx="100" cy="65" r="50" fill="currentColor" fillOpacity="0.08" />
+            <circle cx="100" cy="65" r="32" fill="currentColor" fillOpacity="0.1"  />
+            <circle cx="100" cy="65" r="16" fill="currentColor" fillOpacity="0.15" />
+            <circle cx="100" cy="18" r="6"  fill="currentColor" fillOpacity="0.4"  />
+            <circle cx="145" cy="38" r="5"  fill="currentColor" fillOpacity="0.3"  />
+            <circle cx="155" cy="88" r="6"  fill="currentColor" fillOpacity="0.35" />
+            <circle cx="116" cy="116" r="4" fill="currentColor" fillOpacity="0.3"  />
+            <circle cx="62"  cy="112" r="5" fill="currentColor" fillOpacity="0.3"  />
+            <circle cx="46"  cy="68"  r="4" fill="currentColor" fillOpacity="0.3"  />
+            <circle cx="57"  cy="28"  r="5" fill="currentColor" fillOpacity="0.35" />
+          </svg>
+        </div>
+
+        <div className="ph-awards-logos" aria-hidden>
+          {AWARD_LOGO_KINDS.map((k) => (
+            <div key={k.id} className="ph-awards-logo-item">
+              <img src={k.image} alt="" className="ph-awards-logo-img" />
+              <span className="ph-awards-logo-lbl">{k.label}</span>
+            </div>
+          ))}
+          <div className="ph-awards-total">
+            <span className="ph-awards-total-n">{totalQty}</span>
+            <span className="ph-awards-total-l">total awards</span>
+          </div>
+        </div>
       </header>
 
       {api.loading ? (

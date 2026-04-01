@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import AppRouter from './AppRouter'
 import { THEME_STORAGE_KEY } from './components/ThemeToggle'
+import { AuthProvider } from './auth/AuthContext'
 
 /* Apply saved theme before paint to avoid flash on dashboard-only visits */
 try {
@@ -17,8 +18,10 @@ try {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-        <BrowserRouter>
-          <AppRouter />
-        </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <AppRouter />
+      </BrowserRouter>
+    </AuthProvider>
   </StrictMode>,
 )

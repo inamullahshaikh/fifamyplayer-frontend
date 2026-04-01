@@ -339,12 +339,22 @@ export default function TrophyCabinetPage() {
   if (api.error) {
     return (
       <section className="dash-view trophy-cabinet">
-        <header className="trophy-cab-header">
-          <span className="trophy-cab-eyebrow">Honours</span>
-          <h1 className="trophy-cab-title">Trophy cabinet</h1>
-          <p className="trophy-cab-desc">
-            Every league, cup, and international title you&apos;ve logged.
-          </p>
+        <header className="ph ph--trophies">
+          <div className="ph-glow" aria-hidden />
+          <div className="ph-inner">
+            <div className="ph-text">
+              <p className="ph-kicker"><span className="ph-kicker-dot" aria-hidden />Honours</p>
+              <h1 className="ph-title">Trophy Cabinet</h1>
+              <p className="ph-desc">Every league, cup, and international title you&apos;ve logged.</p>
+            </div>
+            <svg className="ph-deco" aria-hidden viewBox="0 0 200 140" fill="none">
+              <path d="M100 20 L110 50 L140 50 L116 68 L126 98 L100 80 L74 98 L84 68 L60 50 L90 50 Z" fill="currentColor" fillOpacity="0.2" />
+              <path d="M100 30 L108 54 L134 54 L112 70 L120 94 L100 78 L80 94 L88 70 L66 54 L92 54 Z" fill="currentColor" fillOpacity="0.12" />
+              <circle cx="100" cy="60" r="30" fill="currentColor" fillOpacity="0.07" />
+              <circle cx="160" cy="115" r="20" fill="currentColor" fillOpacity="0.08" />
+              <circle cx="40"  cy="110" r="14" fill="currentColor" fillOpacity="0.07" />
+            </svg>
+          </div>
         </header>
         <div className="trophy-cab-alert" role="alert">
           {api.error}
@@ -355,12 +365,40 @@ export default function TrophyCabinetPage() {
 
   return (
     <section className="dash-view trophy-cabinet">
-      <header className="trophy-cab-header">
-        <span className="trophy-cab-eyebrow">Honours</span>
-        <h1 className="trophy-cab-title">Trophy cabinet</h1>
-        <p className="trophy-cab-desc">
-          Your career silverware — by season, club, and country.
-        </p>
+      <header className="ph ph--trophies">
+        <div className="ph-glow" aria-hidden />
+        <div className="ph-inner">
+          <div className="ph-text">
+            <p className="ph-kicker"><span className="ph-kicker-dot" aria-hidden />Honours</p>
+            <h1 className="ph-title">Trophy Cabinet</h1>
+            <p className="ph-desc">
+              Your career silverware — by season, club, and country.
+            </p>
+          </div>
+          <svg className="ph-deco" aria-hidden viewBox="0 0 200 140" fill="none">
+            <path d="M100 20 L110 50 L140 50 L116 68 L126 98 L100 80 L74 98 L84 68 L60 50 L90 50 Z" fill="currentColor" fillOpacity="0.2" />
+            <path d="M100 30 L108 54 L134 54 L112 70 L120 94 L100 78 L80 94 L88 70 L66 54 L92 54 Z" fill="currentColor" fillOpacity="0.12" />
+            <circle cx="100" cy="60" r="30" fill="currentColor" fillOpacity="0.07" />
+            <circle cx="160" cy="115" r="20" fill="currentColor" fillOpacity="0.08" />
+            <circle cx="40"  cy="110" r="14" fill="currentColor" fillOpacity="0.07" />
+          </svg>
+        </div>
+        <div className="ph-bottom">
+          <div className="ph-stat">
+            <span className="ph-stat-n">{api.clubTrophies.length}</span>
+            <span className="ph-stat-l">Club</span>
+          </div>
+          <span className="ph-div" aria-hidden />
+          <div className="ph-stat">
+            <span className="ph-stat-n">{api.intTrophies.length}</span>
+            <span className="ph-stat-l">International</span>
+          </div>
+          <span className="ph-div" aria-hidden />
+          <div className="ph-stat">
+            <span className="ph-stat-n">{total}</span>
+            <span className="ph-stat-l">Total honours</span>
+          </div>
+        </div>
       </header>
 
       {api.loading ? (
