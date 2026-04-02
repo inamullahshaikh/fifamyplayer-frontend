@@ -15,7 +15,10 @@ import {
 } from "recharts";
 import { AWARD_LOGO_KINDS } from "../../config/seasonAssets";
 import { useChartTheme } from "../../hooks/useChartTheme";
-import { awardsAggregated, awardsPerSeasonTotals } from "../../lib/statsChartHelpers";
+import {
+  awardsAggregated,
+  awardsPerSeasonTotals,
+} from "../../lib/statsChartHelpers";
 import type { AwardRow } from "../../types/dashboard";
 
 const ACCENT = "#b45309";
@@ -66,10 +69,10 @@ export function AwardsTripleSpotlight({ rows }: { rows: AwardRow[] }) {
       let count = 0;
       for (const r of rows) {
         const name = String(r.award ?? "").trim();
-        if (!name || !k.pattern.test(name)) continue;
+        if (!name || name !== k.label) continue;
         count += rowQty(r);
       }
-      return { id: k.id, label: k.label, image: k.image, count };
+      return { id: k.id, name: k.name, label: k.label, image: k.image, count };
     });
   }, [rows]);
 
@@ -93,10 +96,8 @@ export function AwardsTripleSpotlight({ rows }: { rows: AwardRow[] }) {
           </div>
           <div className="awards-spot-divider" />
           <div className="awards-spot-copy">
-            <p className="awards-spot-val">
-              {it.count > 0 ? it.count : "—"}
-            </p>
-            <p className="awards-spot-label">{it.label}</p>
+            <p className="awards-spot-val">{it.count > 0 ? it.count : "—"}</p>
+            <p className="awards-spot-label">{it.name}</p>
             {it.count > 0 && (
               <p className="awards-spot-hint muted-text">
                 {it.count === 1 ? "time" : "times"} in career
@@ -163,8 +164,17 @@ export function AwardsAnalyticsCharts({ rows }: { rows: AwardRow[] }) {
                 data={topAwards}
                 margin={{ top: 8, right: 20, left: 4, bottom: 8 }}
               >
-                <CartesianGrid stroke={theme.grid} horizontal strokeDasharray="3 3" />
-                <XAxis type="number" stroke={theme.axis} tick={{ fontSize: 11 }} allowDecimals={false} />
+                <CartesianGrid
+                  stroke={theme.grid}
+                  horizontal
+                  strokeDasharray="3 3"
+                />
+                <XAxis
+                  type="number"
+                  stroke={theme.axis}
+                  tick={{ fontSize: 11 }}
+                  allowDecimals={false}
+                />
                 <YAxis
                   type="category"
                   dataKey="name"
@@ -182,7 +192,12 @@ export function AwardsAnalyticsCharts({ rows }: { rows: AwardRow[] }) {
                     "entries",
                   ]}
                 />
-                <Bar dataKey="count" radius={[0, 6, 6, 0]} isAnimationActive animationDuration={900}>
+                <Bar
+                  dataKey="count"
+                  radius={[0, 6, 6, 0]}
+                  isAnimationActive
+                  animationDuration={900}
+                >
                   {topAwards.map((_, i) => (
                     <Cell key={i} fill={PIE_PALETTE[i % PIE_PALETTE.length]} />
                   ))}
@@ -197,12 +212,23 @@ export function AwardsAnalyticsCharts({ rows }: { rows: AwardRow[] }) {
           insight="Total award entries per season (chronological)."
         >
           {bySeason.length === 0 ? (
-            <p className="awards-chart-empty muted-text">No season-tagged rows.</p>
+            <p className="awards-chart-empty muted-text">
+              No season-tagged rows.
+            </p>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={bySeason} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+              <AreaChart
+                data={bySeason}
+                margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
+              >
                 <defs>
-                  <linearGradient id="awardsAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient
+                    id="awardsAreaGrad"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
                     <stop offset="0%" stopColor={ACCENT} stopOpacity={0.38} />
                     <stop offset="100%" stopColor={ACCENT} stopOpacity={0.02} />
                   </linearGradient>
@@ -216,7 +242,11 @@ export function AwardsAnalyticsCharts({ rows }: { rows: AwardRow[] }) {
                   textAnchor="end"
                   height={56}
                 />
-                <YAxis stroke={theme.axis} tick={{ fontSize: 11 }} allowDecimals={false} />
+                <YAxis
+                  stroke={theme.axis}
+                  tick={{ fontSize: 11 }}
+                  allowDecimals={false}
+                />
                 <Tooltip
                   contentStyle={tooltipStyle}
                   formatter={(value) => [
