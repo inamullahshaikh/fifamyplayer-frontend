@@ -183,6 +183,26 @@ const BUNDESLIGA_TEAMS = ['bayer-04-leverkusen', 'bayern-munich', 'borussia-dort
 const SERIE_A_TEAMS = ['ac-milan', 'inter-milan', 'juventus-fc', 'ss-lazio', 'ssc-napoli', 'as-roma']
 const LIGUE_1_TEAMS = ['as-monaco', 'losc-lille', 'ogc-nice', 'olympique-lyon', 'olympique-marseille', 'paris-saint-germain']
 
+/** Top-five league bucket for filtering selectable awards (Season Data). */
+export type DomesticLeagueKey =
+  | 'premier-league'
+  | 'la-liga'
+  | 'bundesliga'
+  | 'serie-a'
+  | 'ligue-1'
+
+const TEAM_DOMESTIC_LEAGUE: Record<string, DomesticLeagueKey> = Object.fromEntries([
+  ...LA_LIGA_TEAMS.map((id) => [id, 'la-liga' as const]),
+  ...PREMIER_LEAGUE_TEAMS.map((id) => [id, 'premier-league' as const]),
+  ...BUNDESLIGA_TEAMS.map((id) => [id, 'bundesliga' as const]),
+  ...SERIE_A_TEAMS.map((id) => [id, 'serie-a' as const]),
+  ...LIGUE_1_TEAMS.map((id) => [id, 'ligue-1' as const]),
+]) as Record<string, DomesticLeagueKey>
+
+export function getDomesticLeagueKeyForTeam(teamId: string): DomesticLeagueKey | null {
+  return TEAM_DOMESTIC_LEAGUE[teamId] ?? null
+}
+
 const TEAM_BY_ID = Object.fromEntries(TEAMS.map((t) => [t.id, t]))
 
 /** Labels for team IDs. */
@@ -296,17 +316,151 @@ export const INT_TROPHIES: { id: IntTrophyId; label: string }[] = [
   { id: 'ofc-nations-cup', label: 'OFC Nations Cup' },
 ]
 
-/** Common awards for autocomplete/selection. */
-export const COMMON_AWARDS = [
-  'Ballon d\'Or', 'Golden Boot', 'FIFA Best Player', 'Pichichi',
-  'Laliga Player of the Season', 'Laliga Player of the Month', 'La Liga Player of the Season', 'La Liga Player of the Month',
-  'Premier League Player of the Season', 'Premier League Golden Boot', 'Premier League Player of the Month',
-  'UEFA Champions League Best Player', 'UEFA Champions League Top Goalscorer', 'UEFA Champions League Tops Goalscorer',
-  'UEFA Team of the Year', 'FIFPro World XI', 'Man of the match', 'MOTM', 'POTM',
-  'Copa del Rey Best Player', 'FA Cup Best Player', 'Carabao Cup Best Player',
-  'UEFA EURO Best Player', 'UEFA EURO Golden Boot', 'FIFA World Cup Golden Ball', 'FIFA World Cup Golden Boot',
-  'Copa Trophy', 'Premier League Team of the season', 'UEFA Tem of the Season',
+/** Optgroup + options for the Season Data awards &lt;select&gt;. */
+export type AwardSelectGroup = { label: string; awards: readonly string[] }
+
+/** UEFA / FIFA honours any club player can earn (plus global individual awards). */
+const SHARED_AWARD_GROUPS: AwardSelectGroup[] = [
+  {
+    label: 'UEFA Champions League',
+    awards: ['UEFA Champions League Best Player', 'UEFA Champions League Top Goalscorer'],
+  },
+  {
+    label: 'UEFA national team',
+    awards: ['UEFA EURO Best Player', 'UEFA EURO Golden Boot'],
+  },
+  {
+    label: 'FIFA World Cup',
+    awards: ['FIFA World Cup Golden Ball', 'FIFA World Cup Golden Boot'],
+  },
+  {
+    label: 'Global & other',
+    awards: [
+      'Ballon d\'Or',
+      'Golden Boot',
+      'FIFA Best Player',
+      'FIFPro World XI',
+      'UEFA Team of the Year',
+      'Man of the match',
+    ],
+  },
 ]
+
+/**
+ * League + domestic cup awards only for that country’s competitions
+ * (aligned with real league honours and EA FC-style POTM / golden boot / cup MVP naming).
+ */
+const DOMESTIC_AWARD_GROUPS: Record<DomesticLeagueKey, AwardSelectGroup[]> = {
+  'premier-league': [
+    {
+      label: 'Premier League',
+      awards: [
+        'Premier League Golden Boot',
+        'Premier League Player of the Month',
+        'Premier League Player of the Season',
+        'Premier League Team of the season',
+      ],
+    },
+    {
+      label: 'English cups',
+      awards: ['FA Cup Best Player', 'Carabao Cup Best Player'],
+    },
+  ],
+  'la-liga': [
+    {
+      label: 'La Liga',
+      awards: ['La Liga Player of the Month', 'La Liga Player of the Season', 'Pichichi'],
+    },
+    {
+      label: 'Spanish cups',
+      awards: ['Copa del Rey Best Player', 'Copa Trophy'],
+    },
+  ],
+  bundesliga: [
+    {
+      label: 'Bundesliga',
+      awards: [
+        'Bundesliga Golden Boot',
+        'Bundesliga Player of the Month',
+        'Bundesliga Player of the Season',
+        'Bundesliga Team of the Season',
+      ],
+    },
+    {
+      label: 'German cups',
+      awards: ['DFB-Pokal Best Player', 'DFL-Supercup Best Player'],
+    },
+  ],
+  'serie-a': [
+    {
+      label: 'Serie A',
+      awards: [
+        'Serie A Player of the Month',
+        'Serie A Player of the Season',
+        'Capocannoniere',
+        'Serie A Team of the Season',
+      ],
+    },
+    {
+      label: 'Italian cups',
+      awards: ['Coppa Italia Best Player', 'Supercoppa Italiana Best Player'],
+    },
+  ],
+  'ligue-1': [
+    {
+      label: 'Ligue 1',
+      awards: [
+        'Ligue 1 Golden Boot',
+        'Ligue 1 Player of the Month',
+        'Ligue 1 Player of the Season',
+        'Ligue 1 Team of the season',
+      ],
+    },
+    {
+      label: 'French cups',
+      awards: ['Coupe de France Best Player', 'Trophée des Champions Best Player'],
+    },
+  ],
+}
+
+/** Awards shown in Season Data for the selected club (domestic + shared UEFA/FIFA/global). */
+export function getAwardSelectGroupsForTeam(teamId: string): AwardSelectGroup[] {
+  const league = teamId ? getDomesticLeagueKeyForTeam(teamId) : null
+  if (!league) return [...SHARED_AWARD_GROUPS]
+  const domestic = DOMESTIC_AWARD_GROUPS[league]
+  return [...domestic, ...SHARED_AWARD_GROUPS]
+}
+
+function collectAllSelectableAwards(): string[] {
+  const u = new Set<string>()
+  for (const g of SHARED_AWARD_GROUPS) for (const a of g.awards) u.add(a)
+  for (const groups of Object.values(DOMESTIC_AWARD_GROUPS)) {
+    for (const g of groups) for (const a of g.awards) u.add(a)
+  }
+  return [...u].sort((a, b) => a.localeCompare(b))
+}
+
+export const ALL_SELECTABLE_AWARDS: string[] = collectAllSelectableAwards()
+
+/** @deprecated Prefer ALL_SELECTABLE_AWARDS or getAwardSelectGroupsForTeam */
+export const COMMON_AWARDS = ALL_SELECTABLE_AWARDS
+
+export function isSelectableAwardForTeam(awardName: string, teamId: string): boolean {
+  const t = awardName.trim()
+  if (!t) return true
+  for (const g of getAwardSelectGroupsForTeam(teamId)) {
+    if (g.awards.includes(t)) return true
+  }
+  return false
+}
+
+/** MOTM and monthly POTM can repeat in one season; all other awards save as quantity 1. */
+export function awardUsesQuantity(awardName: string): boolean {
+  const s = awardName.trim().toLowerCase()
+  if (!s) return false
+  if (s === 'man of the match') return true
+  return s.includes('player of the month')
+}
 
 /** Season format: XXXX/XX */
 export const SEASON_REGEX = /^\d{4}\/\d{2}$/

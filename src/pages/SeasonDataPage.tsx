@@ -8,10 +8,12 @@ import {
   TEAM_IMAGES,
 } from '../config/seasonAssets'
 import {
+  awardUsesQuantity,
   CLUB_TROPHIES,
-  COMMON_AWARDS,
+  getAwardSelectGroupsForTeam,
   INT_COMPETITIONS,
   INT_TROPHIES,
+  isSelectableAwardForTeam,
   SEASON_REGEX,
   LEAGUES_WITH_TEAMS,
   TEAMS_SORTED_BY_LEAGUE,
@@ -135,6 +137,20 @@ export default function SeasonDataPage() {
     }
   }, [])
 
+  const awardSelectGroups = useMemo(() => getAwardSelectGroupsForTeam(team), [team])
+
+  useEffect(() => {
+    if (!team) return
+    const allowed = new Set(awardSelectGroups.flatMap((g) => [...g.awards]))
+    setAwards((prev) =>
+      prev.map((row) => {
+        const name = row.award.trim()
+        if (!name || allowed.has(name)) return row
+        return { ...row, award: '' }
+      }),
+    )
+  }, [team, awardSelectGroups])
+
   const nationalityCode = toNationalityCode(playerNationality)
   const nationalityLabel = playerNationality ? getNationalityLabel(playerNationality) : ''
   const confederation = nationalityCode ? getConfederationByCode(nationalityCode) : undefined
@@ -237,16 +253,31 @@ export default function SeasonDataPage() {
   const removeAward = (idx: number) => setAwards((a) => a.filter((_, i) => i !== idx))
   const updateAward = (idx: number, field: 'award' | 'quantity', value: string | number) => {
     setAwards((a) =>
-      a.map((x, i) =>
-        i === idx
-          ? { ...x, [field]: field === 'quantity' ? Number(value) || 0 : value }
-          : x
-      )
+      a.map((x, i) => {
+        if (i !== idx) return x
+        if (field === 'quantity') {
+          return { ...x, quantity: Number(value) || 0 }
+        }
+        const nextAward = String(value)
+        return {
+          ...x,
+          award: nextAward,
+          quantity: awardUsesQuantity(nextAward) ? x.quantity || 1 : 1,
+        }
+      })
     )
   }
 
   const handleSave = async () => {
     if (!team || !season.trim()) return
+    for (const a of awards) {
+      const name = a.award.trim()
+      if (!name) continue
+      if (!isSelectableAwardForTeam(name, team)) {
+        setSaveError('Each award must match your club’s league and the shared UEFA/FIFA list.')
+        return
+      }
+    }
     setSaving(true)
     setSaveError(null)
     setSaveSuccess(false)
@@ -270,10 +301,13 @@ export default function SeasonDataPage() {
       }
       for (const a of awards) {
         if (a.award.trim()) {
+          const q = awardUsesQuantity(a.award)
+            ? Math.max(1, Math.floor(Number(a.quantity)) || 1)
+            : 1
           await postJson('/api/season_awards', {
             season: season.trim(),
             award: a.award.trim(),
-            quantity: a.quantity,
+            quantity: q,
           })
         }
       }
@@ -620,7 +654,8 @@ export default function SeasonDataPage() {
           <div className="season-step-panel">
             <h3 className="season-panel-title">Awards</h3>
             <p className="season-panel-sub muted-text">
-              Add any individual awards received this season.
+              Pick awards for your club’s league and cups, plus UEFA Champions League and international honours.
+              Quantity appears only for Player of the Month and Man of the Match (e.g. multiple wins).
               <span className="season-optional-hint"> Skip if none.</span>
             </p>
             <div className="season-awards-list">
@@ -632,24 +667,35 @@ export default function SeasonDataPage() {
                     <img src={awardImg} alt="" className="season-item-img" width={36} height={36} />
                   )}
                   <span className="season-award-fields">
-                    <input
-                      type="text"
-                      className="season-award-input"
-                      list="awards-list"
-                      placeholder="Award name"
+                    <select
+                      className="season-award-input season-award-select"
+                      aria-label="Award"
                       value={a.award}
                       onChange={(e) => updateAward(i, 'award', e.target.value)}
-                    />
-                    <span className="season-award-qty-wrap">
-                      <label className="season-award-qty-label">Qty</label>
-                      <input
-                        type="number"
-                        min={1}
-                        className="season-award-qty"
-                        value={a.quantity}
-                        onChange={(e) => updateAward(i, 'quantity', e.target.value)}
-                      />
-                    </span>
+                    >
+                      <option value="">Select an award…</option>
+                      {awardSelectGroups.map((g) => (
+                        <optgroup key={g.label} label={g.label}>
+                          {g.awards.map((aw) => (
+                            <option key={aw} value={aw}>
+                              {aw}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                    {awardUsesQuantity(a.award) && (
+                      <span className="season-award-qty-wrap">
+                        <label className="season-award-qty-label">Qty</label>
+                        <input
+                          type="number"
+                          min={1}
+                          className="season-award-qty"
+                          value={a.quantity}
+                          onChange={(e) => updateAward(i, 'quantity', e.target.value)}
+                        />
+                      </span>
+                    )}
                   </span>
                   <button type="button" className="season-award-remove" onClick={() => removeAward(i)}>
                     Remove
@@ -657,11 +703,6 @@ export default function SeasonDataPage() {
                 </div>
                 )
               })}
-              <datalist id="awards-list">
-                {COMMON_AWARDS.map((aw) => (
-                  <option key={aw} value={aw} />
-                ))}
-              </datalist>
               {awards.length === 0 && (
                 <p className="season-awards-empty muted-text">No awards added yet.</p>
               )}

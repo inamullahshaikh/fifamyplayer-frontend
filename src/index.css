@@ -28,6 +28,11 @@
   --r-md: 14px;
   --r-lg: 20px;
   --r-xl: 28px;
+
+  /* Full-page brand backdrop (used with glass surfaces) */
+  --brand-glass-bg: color-mix(in srgb, var(--bg-2) 74%, transparent);
+  --brand-glass-bg-strong: color-mix(in srgb, var(--bg) 82%, transparent);
+  --brand-glass-blur: 20px;
 }
 
 /* Theme overrides (set via `document.documentElement.dataset.theme`) */
@@ -51,12 +56,17 @@ html[data-theme='dark'] {
   --green-border: rgba(147, 197, 253, 0.55);
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  min-height: 100%;
+  background-color: var(--bg);
+}
 
 body {
   margin: 0;
+  min-height: 100dvh;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: var(--bg);
+  background: transparent;
   color: var(--text-2);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -64,10 +74,11 @@ body {
   line-height: 1.6;
 }
 
-/* Global translucent illustration layer across all pages */
+/* Full-viewport VirtualXI brand atmosphere (all routes) */
 #root {
   position: relative;
   isolation: isolate;
+  min-height: 100dvh;
 }
 
 #root::before {
@@ -76,25 +87,104 @@ body {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 1;
   background:
-    radial-gradient(46rem 24rem at 8% 10%, color-mix(in srgb, #3b82f6 20%, transparent), transparent 68%),
-    radial-gradient(34rem 20rem at 88% 18%, color-mix(in srgb, #22c55e 16%, transparent), transparent 72%),
-    radial-gradient(30rem 18rem at 16% 84%, color-mix(in srgb, #a855f7 12%, transparent), transparent 74%),
-    radial-gradient(34rem 20rem at 84% 88%, color-mix(in srgb, #14b8a6 14%, transparent), transparent 76%),
-    linear-gradient(120deg, color-mix(in srgb, #3b82f6 4%, transparent), transparent 40%, color-mix(in srgb, #22c55e 4%, transparent)),
-    radial-gradient(circle at center, color-mix(in srgb, var(--text-1) 5%, transparent) 1px, transparent 1px);
+    /* Top “floodlight” arc */
+    radial-gradient(ellipse 120% 70% at 50% -25%, color-mix(in srgb, var(--green-light) 22%, transparent), transparent 58%),
+    /* Corner colour orbs */
+    radial-gradient(42rem 32rem at -5% 15%, color-mix(in srgb, #3b82f6 28%, transparent), transparent 62%),
+    radial-gradient(38rem 30rem at 108% 8%, color-mix(in srgb, #22c55e 18%, transparent), transparent 58%),
+    radial-gradient(32rem 28rem at 8% 108%, color-mix(in srgb, #a855f7 14%, transparent), transparent 60%),
+    radial-gradient(36rem 30rem at 92% 96%, color-mix(in srgb, #14b8a6 16%, transparent), transparent 58%),
+    /* Subtle pitch stripe texture */
+    repeating-linear-gradient(
+      104deg,
+      transparent 0,
+      transparent 22px,
+      color-mix(in srgb, var(--green) 2.8%, transparent) 22px,
+      color-mix(in srgb, var(--green) 2.8%, transparent) 23px
+    ),
+    /* Brand tint wash */
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #3b82f6 5%, transparent) 0%,
+      transparent 38%,
+      color-mix(in srgb, #22c55e 4%, transparent) 100%
+    ),
+    /* Fine dot grid */
+    radial-gradient(circle at center, color-mix(in srgb, var(--text-1) 4.5%, transparent) 0.55px, transparent 0.55px);
   background-size:
     auto,
     auto,
     auto,
     auto,
     auto,
-    28px 28px;
+    auto,
+    auto,
+    22px 22px;
+}
+
+/* Slow-moving secondary glow (low-cost opacity pulse) */
+#root::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.55;
+  background:
+    radial-gradient(50rem 40rem at 50% 120%, color-mix(in srgb, var(--green) 12%, transparent), transparent 55%),
+    radial-gradient(35rem 35rem at 0% 50%, color-mix(in srgb, #6366f1 8%, transparent), transparent 50%);
+  animation: vx-brand-pulse 22s ease-in-out infinite alternate;
+}
+
+@keyframes vx-brand-pulse {
+  from { opacity: 0.38; }
+  to { opacity: 0.62; }
 }
 
 html[data-theme='dark'] #root::before {
-  opacity: 0.34;
+  opacity: 0.88;
+  background:
+    radial-gradient(ellipse 120% 70% at 50% -25%, color-mix(in srgb, var(--green-light) 35%, transparent), transparent 55%),
+    radial-gradient(42rem 32rem at -5% 15%, color-mix(in srgb, #3b82f6 22%, transparent), transparent 58%),
+    radial-gradient(38rem 30rem at 108% 8%, color-mix(in srgb, #22c55e 14%, transparent), transparent 55%),
+    radial-gradient(32rem 28rem at 8% 108%, color-mix(in srgb, #a855f7 12%, transparent), transparent 55%),
+    radial-gradient(36rem 30rem at 92% 96%, color-mix(in srgb, #14b8a6 12%, transparent), transparent 55%),
+    repeating-linear-gradient(
+      104deg,
+      transparent 0,
+      transparent 22px,
+      color-mix(in srgb, var(--green-light) 3.5%, transparent) 22px,
+      color-mix(in srgb, var(--green-light) 3.5%, transparent) 23px
+    ),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #3b82f6 8%, transparent) 0%,
+      transparent 42%,
+      color-mix(in srgb, #22c55e 6%, transparent) 100%
+    ),
+    radial-gradient(circle at center, color-mix(in srgb, #e2e8f0 5%, transparent) 0.5px, transparent 0.5px);
+  background-size:
+    auto,
+    auto,
+    auto,
+    auto,
+    auto,
+    auto,
+    auto,
+    22px 22px;
+}
+
+html[data-theme='dark'] #root::after {
+  opacity: 0.42;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #root::after {
+    animation: none;
+    opacity: 0.48;
+  }
 }
 
 p {
@@ -201,14 +291,14 @@ a { text-decoration: none; }
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255,255,255,.88);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: color-mix(in srgb, #ffffff 58%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
 }
 
 html[data-theme='dark'] .navbar {
-  background: rgba(11, 18, 32, 0.72);
+  background: color-mix(in srgb, var(--bg) 52%, transparent);
 }
 
 .nav-inner {
@@ -680,7 +770,9 @@ html[data-theme='dark'] .card-front {
 /* ─── About ──────────────────────────────────────────────────────────────────── */
 
 .about {
-  background: var(--bg-2);
+  background: var(--brand-glass-bg);
+  -webkit-backdrop-filter: blur(var(--brand-glass-blur));
+  backdrop-filter: blur(var(--brand-glass-blur));
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding: 96px 0;
@@ -744,6 +836,9 @@ html[data-theme='dark'] .card-front {
 
 .connect {
   padding: 96px 0;
+  background: color-mix(in srgb, var(--bg-2) 55%, transparent);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
 }
 
 .connect-inner {
@@ -829,13 +924,15 @@ html[data-theme='dark'] .card-front {
 .dashboard {
   padding: 96px 0;
   border-top: 1px solid var(--border);
-  background: var(--bg-2);
+  background: var(--brand-glass-bg);
+  -webkit-backdrop-filter: blur(var(--brand-glass-blur));
+  backdrop-filter: blur(var(--brand-glass-blur));
 }
 
 /* Root + mobile top bar + backdrop */
 .dash-root {
   min-height: 100svh;
-  background: var(--bg-2);
+  background: transparent;
 }
 
 .dash-backdrop {
@@ -877,8 +974,9 @@ html[data-theme='dark'] .card-front {
   height: 56px;
   padding: 0 14px 0 10px;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg) 88%, var(--bg-2));
-  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
   position: fixed;
   top: 0;
   left: 0;
@@ -927,7 +1025,7 @@ html[data-theme='dark'] .card-front {
 .dash-shell {
   display: flex;
   min-height: 100svh;
-  background: var(--bg-2);
+  background: transparent;
 }
 
 /* Sidebar column must not stretch to match a tall main — only the main area scrolls */
@@ -1005,9 +1103,11 @@ html[data-theme='dark'] .card-front {
   overscroll-behavior: contain;
   background: linear-gradient(
     180deg,
-    var(--bg) 0%,
-    color-mix(in srgb, var(--bg) 96%, var(--bg-3)) 100%
+    color-mix(in srgb, var(--bg) 82%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 76%, transparent) 100%
   );
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
   border-right: 1px solid var(--border);
   padding: 10px 8px 10px;
   box-shadow: 2px 0 16px rgba(15, 23, 42, 0.05);
@@ -1346,7 +1446,9 @@ html[data-theme='dark'] .dash-sidebar-link--logout:hover {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--bg-2);
+  background: var(--brand-glass-bg);
+  -webkit-backdrop-filter: blur(var(--brand-glass-blur));
+  backdrop-filter: blur(var(--brand-glass-blur));
 }
 
 .dash-navbar {
@@ -1356,8 +1458,9 @@ html[data-theme='dark'] .dash-sidebar-link--logout:hover {
   flex-shrink: 0;
   padding: 10px 16px 10px 20px;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg) 94%, var(--bg-2));
-  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--bg) 68%, transparent);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
   box-shadow: var(--shadow-xs);
   position: sticky;
   z-index: 125;
@@ -1499,7 +1602,7 @@ html[data-theme='dark'] .dash-navbar-logout:hover {
   padding: 24px 24px 28px;
   min-width: 0;
   min-height: 0;
-  background: var(--bg-2);
+  background: transparent;
 }
 
 @media (max-width: 1023px) {
@@ -1533,7 +1636,7 @@ html[data-theme='dark'] .dash-navbar-logout:hover {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background: transparent;
 }
 
 /* Top navigation bar */
@@ -1544,7 +1647,9 @@ html[data-theme='dark'] .dash-navbar-logout:hover {
   padding: 0 24px;
   height: 60px;
   border-bottom: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--brand-glass-bg-strong);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
   flex-shrink: 0;
 }
 
@@ -1598,7 +1703,9 @@ html[data-theme='dark'] .dash-navbar-logout:hover {
 .auth-card {
   width: 100%;
   max-width: 420px;
-  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   padding: 36px 32px 28px;
@@ -3440,6 +3547,12 @@ html[data-theme='dark'] .season-check-card:hover {
   outline: none;
   border-color: var(--green);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 15%, transparent);
+}
+
+select.season-award-select {
+  cursor: pointer;
+  appearance: auto;
+  padding-right: 12px;
 }
 
 .season-award-qty-wrap {
@@ -6301,7 +6414,9 @@ html[data-theme='dark'] .stats-int-header-icon {
 /* ─── Footer ─────────────────────────────────────────────────────────────────── */
 
 .footer {
-  background: var(--text-1);
+  background: color-mix(in srgb, var(--text-1) 90%, transparent);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   padding: 48px 0;
 }
 
@@ -6311,7 +6426,7 @@ html[data-theme='dark'] .stats-int-header-icon {
 }
 
 html[data-theme='dark'] .footer {
-  background: var(--bg-2);
+  background: color-mix(in srgb, var(--bg-2) 82%, transparent);
 }
 
 .footer-inner {
@@ -8212,9 +8327,11 @@ button:active:not(:disabled) {
   justify-content: center;
   padding: 56px 52px;
   background:
-    radial-gradient(80% 80% at 10% 18%, color-mix(in srgb, #22c55e 30%, transparent), transparent 62%),
-    radial-gradient(65% 70% at 86% 88%, color-mix(in srgb, #2563eb 22%, transparent), transparent 62%),
-    var(--bg-3);
+    radial-gradient(80% 80% at 10% 18%, color-mix(in srgb, #22c55e 28%, transparent), transparent 62%),
+    radial-gradient(65% 70% at 86% 88%, color-mix(in srgb, #2563eb 20%, transparent), transparent 62%),
+    color-mix(in srgb, var(--bg-3) 72%, transparent);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border-right: 1px solid var(--border);
 }
 
@@ -8299,7 +8416,9 @@ button:active:not(:disabled) {
   align-items: center;
   justify-content: center;
   padding: 48px 32px;
-  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 62%, transparent);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
 }
 
 .auth-form-side .auth-card {
