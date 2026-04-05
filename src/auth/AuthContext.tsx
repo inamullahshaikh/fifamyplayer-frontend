@@ -15,12 +15,19 @@ type Credentials = {
   password: string
 }
 
+export type RegisterPayload = {
+  username: string
+  password: string
+  securityQuestion: string
+  securityAnswer: string
+}
+
 type AuthContextType = {
   token: string
   user: AuthUser | null
   isAuthenticated: boolean
   login: (creds: Credentials) => Promise<void>
-  register: (creds: Credentials) => Promise<void>
+  register: (payload: RegisterPayload) => Promise<void>
   logout: () => void
 }
 
@@ -40,6 +47,19 @@ async function submitAuth(path: string, creds: Credentials): Promise<AuthRespons
   return body as AuthResponse
 }
 
+async function submitRegister(payload: RegisterPayload): Promise<AuthResponse> {
+  const res = await apiFetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const body = (await res.json().catch(() => ({}))) as Partial<AuthResponse> & { error?: string }
+  if (!res.ok || !body.token || !body.user) {
+    throw new Error(body.error || `Request failed: ${res.status}`)
+  }
+  return body as AuthResponse
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string>(() => getAuthToken())
   const [user, setUser] = useState<AuthUser | null>(() => getStoredUser())
@@ -51,8 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(auth.user)
   }
 
-  const register = async (creds: Credentials) => {
-    const auth = await submitAuth('/api/auth/register', creds)
+  const register = async (payload: RegisterPayload) => {
+    const auth = await submitRegister(payload)
     setAuthSession(auth.token, auth.user)
     setToken(auth.token)
     setUser(auth.user)

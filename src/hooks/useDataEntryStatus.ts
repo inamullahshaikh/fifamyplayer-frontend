@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useCareer } from '../career/CareerContext'
 import { apiFetch } from '../lib/api'
 
 export type DataEntryStatus = {
@@ -20,6 +21,7 @@ const FALLBACK = {
 }
 
 export function useDataEntryStatus(): DataEntryStatus {
+  const { activeCareerPlayerId } = useCareer()
   const [seasonCount, setSeasonCount] = useState(0)
   const [yearCount, setYearCount] = useState(0)
   const [maxSeasons, setMaxSeasons] = useState(FALLBACK.maxSeasons)
@@ -65,7 +67,7 @@ export function useDataEntryStatus(): DataEntryStatus {
     return () => {
       cancelled = true
     }
-  }, [tick])
+  }, [tick, activeCareerPlayerId])
 
   return {
     seasonCount,

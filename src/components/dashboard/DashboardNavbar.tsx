@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import ThemeToggle from '../ThemeToggle'
+import CareerSwitcher from './CareerSwitcher'
 import { IconLogout } from './SidebarNavIcons'
 import { DASHBOARD_NAV_ITEMS, type SidebarNavItem } from './dashboardNav'
 
@@ -44,6 +45,7 @@ export default function DashboardNavbar({
         </nav>
       </div>
       <div className="dash-navbar-tools">
+        <CareerSwitcher />
         <ThemeToggle buttonClassName="dash-navbar-theme" />
         <button type="button" className="dash-navbar-logout" onClick={handleLogout}>
           <span className="dash-navbar-link-icon" aria-hidden>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useCareer } from "../career/CareerContext";
 import type { AwardRow, SeasonDataRow } from "../types/dashboard";
 import { apiFetch } from "../lib/api";
 
@@ -23,6 +24,7 @@ const initial: AwardsPageApiState = {
 };
 
 export function useAwardsPageApi(): AwardsPageApiState {
+  const { activeCareerPlayerId } = useCareer();
   const [state, setState] = useState<AwardsPageApiState>(initial);
 
   useEffect(() => {
@@ -56,7 +58,7 @@ export function useAwardsPageApi(): AwardsPageApiState {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activeCareerPlayerId]);
 
   return state;
 }

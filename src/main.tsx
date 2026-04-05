@@ -5,6 +5,7 @@ import './index.css'
 import AppRouter from './AppRouter'
 import { THEME_STORAGE_KEY } from './components/ThemeToggle'
 import { AuthProvider } from './auth/AuthContext'
+import { CareerProvider } from './career/CareerContext'
 
 /* Apply saved theme before paint to avoid flash on dashboard-only visits */
 try {
@@ -19,9 +20,11 @@ try {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
-      <BrowserRouter>
-        <AppRouter />
-      </BrowserRouter>
+      <CareerProvider>
+        <BrowserRouter>
+          <AppRouter />
+        </BrowserRouter>
+      </CareerProvider>
     </AuthProvider>
   </StrictMode>,
 )

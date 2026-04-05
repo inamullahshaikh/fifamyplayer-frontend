@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useCareer } from '../career/CareerContext'
 import { aggregateSeasonGoalsAssists, normalizeYearlyData, totalAwards } from '../lib/dashboardAggregates'
-import { apiFetch } from '../lib/api'
+import { apiFetch, getActiveCareerPlayerId } from '../lib/api'
 import type {
   AwardRow,
   PlayerRow,
@@ -78,6 +79,7 @@ function deriveTeamSlugs(sorted: SeasonDataRow[]): { current: string | null; pre
 export type DashboardApi = DashboardApiState & { refresh: () => void }
 
 export function useDashboardApi(): DashboardApi {
+  const { activeCareerPlayerId } = useCareer()
   const [state, setState] = useState<DashboardApiState>(initial)
   const [tick, setTick] = useState(0)
 
@@ -109,10 +111,17 @@ export function useDashboardApi(): DashboardApi {
         const seasonSeries = aggregateSeasonGoalsAssists(seasonArr)
         const yearlySeries = normalizeYearlyData(Array.isArray(yearlyRaw) ? yearlyRaw : [])
 
+        const sel = activeCareerPlayerId || getActiveCareerPlayerId()
+        const playerList = Array.isArray(playersRaw) ? playersRaw : []
+        const player =
+          playerList.length > 0
+            ? playerList.find((p) => String(p._id) === sel) ?? playerList[0]
+            : null
+
         setState({
           loading: false,
           error: null,
-          player: Array.isArray(playersRaw) && playersRaw.length > 0 ? playersRaw[0] : null,
+          player,
           currentTeamSlug: current,
           prevTeamSlug: prev,
           transfers: Array.isArray(transfersRaw) ? transfersRaw : [],
@@ -130,7 +139,7 @@ export function useDashboardApi(): DashboardApi {
 
     load()
     return () => { cancelled = true }
-  }, [tick])
+  }, [tick, activeCareerPlayerId])
 
   return { ...state, refresh }
 }

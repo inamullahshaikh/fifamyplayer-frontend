@@ -79,6 +79,20 @@ export function IconAwards(props: SVGProps<SVGSVGElement>) {
   )
 }
 
+export function IconAccount(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} aria-hidden {...props}>
+      <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M6 20a6 6 0 0112 0"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 export function IconLogout(props: SVGProps<SVGSVGElement>) {
   return (
     <svg {...base} aria-hidden {...props}>
@@ -114,6 +128,14 @@ export function IconChevronLeft(props: SVGProps<SVGSVGElement>) {
   return (
     <svg {...base} aria-hidden {...props}>
       <path d="M14 7l-5 5 5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function IconChevronDown(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} aria-hidden {...props}>
+      <path d="M7 10l5 5 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }

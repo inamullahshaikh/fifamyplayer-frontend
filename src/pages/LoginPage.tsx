@@ -1,12 +1,11 @@
 import { useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import ThemeToggle from '../components/ThemeToggle'
 import footballLogo from '../assets/images/football.png'
 
 export default function LoginPage() {
-  const { login } = useAuth()
-  const navigate = useNavigate()
+  const { login, isAuthenticated } = useAuth()
   const location = useLocation()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -15,13 +14,16 @@ export default function LoginPage() {
 
   const from = ((location.state as { from?: string } | null)?.from || '/dashboard') as string
 
+  if (isAuthenticated) {
+    return <Navigate to="/select-career" replace state={{ from }} />
+  }
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
     try {
       await login({ username, password })
-      navigate(from, { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
@@ -109,6 +111,12 @@ export default function LoginPage() {
                 {submitting ? 'Signing in...' : 'Login'}
               </button>
             </form>
+
+            <p className="auth-switch">
+              <Link to="/forgot-password" className="auth-switch-link">
+                Forgot password?
+              </Link>
+            </p>
 
             <p className="auth-switch">
               No account yet?{' '}

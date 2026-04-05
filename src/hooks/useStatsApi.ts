@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useCareer } from '../career/CareerContext'
 import {
   bestPerformances,
   clubStats,
@@ -39,6 +40,7 @@ export type StatsApiState = {
 }
 
 export function useStatsApi(): StatsApiState {
+  const { activeCareerPlayerId } = useCareer()
   const [state, setState] = useState<StatsApiState>({
     loading: true,
     error: null,
@@ -109,7 +111,7 @@ export function useStatsApi(): StatsApiState {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [activeCareerPlayerId])
 
   return state
 }

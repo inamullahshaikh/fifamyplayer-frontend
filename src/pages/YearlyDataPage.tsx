@@ -14,6 +14,7 @@ import {
 import { normalizeYearlyData } from '../lib/dashboardAggregates'
 import { useChartTheme } from '../hooks/useChartTheme'
 import { apiFetch } from '../lib/api'
+import { useCareer } from '../career/CareerContext'
 import { useDataEntryStatus } from '../hooks/useDataEntryStatus'
 import DataCapNotice from '../components/DataCapNotice'
 import type { YearlyDataRow } from '../types/dashboard'
@@ -63,6 +64,7 @@ async function deleteJson(url: string) {
 const YEAR_REGEX = /^\d{4}$/
 
 export default function YearlyDataPage() {
+  const { activeCareerPlayerId } = useCareer()
   const dataEntry = useDataEntryStatus()
   const [data, setData] = useState<YearlyDataRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -96,7 +98,7 @@ export default function YearlyDataPage() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [activeCareerPlayerId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

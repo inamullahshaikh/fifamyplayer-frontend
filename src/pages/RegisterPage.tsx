@@ -1,24 +1,34 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import ThemeToggle from '../components/ThemeToggle'
 import footballLogo from '../assets/images/football.png'
+import { SECURITY_QUESTIONS } from '../config/securityQuestions'
 
 export default function RegisterPage() {
-  const { register } = useAuth()
-  const navigate = useNavigate()
+  const { register, isAuthenticated } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [securityQuestion, setSecurityQuestion] = useState(SECURITY_QUESTIONS[0] ?? '')
+  const [securityAnswer, setSecurityAnswer] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  if (isAuthenticated) {
+    return <Navigate to="/select-career" replace state={{ from: '/dashboard' }} />
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
     try {
-      await register({ username, password })
-      navigate('/dashboard', { replace: true })
+      await register({
+        username,
+        password,
+        securityQuestion,
+        securityAnswer: securityAnswer.trim(),
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')
     } finally {
@@ -64,7 +74,7 @@ export default function RegisterPage() {
           <div className="auth-card">
             <div className="auth-badge">New Account</div>
             <h1 className="auth-heading">Create account</h1>
-            <p className="auth-subheading">One account tracks one player's full career.</p>
+            <p className="auth-subheading">One account — multiple created-player careers.</p>
 
             <form onSubmit={onSubmit} className="auth-form">
               <div className="auth-field">
@@ -92,6 +102,40 @@ export default function RegisterPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password"
                   minLength={6}
+                  required
+                />
+              </div>
+
+              <div className="auth-field">
+                <label className="auth-field-label" htmlFor="reg-sec-q">
+                  Security question (for password reset)
+                </label>
+                <select
+                  id="reg-sec-q"
+                  className="auth-input"
+                  value={securityQuestion}
+                  onChange={(e) => setSecurityQuestion(e.target.value)}
+                  required
+                >
+                  {SECURITY_QUESTIONS.map((q) => (
+                    <option key={q} value={q}>
+                      {q}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="auth-field">
+                <label className="auth-field-label" htmlFor="reg-sec-a">Your answer</label>
+                <input
+                  id="reg-sec-a"
+                  className="auth-input"
+                  type="text"
+                  placeholder="You’ll need this exact meaning if you forget your password"
+                  value={securityAnswer}
+                  onChange={(e) => setSecurityAnswer(e.target.value)}
+                  autoComplete="off"
+                  minLength={2}
                   required
                 />
               </div>

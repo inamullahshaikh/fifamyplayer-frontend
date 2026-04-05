@@ -1,5 +1,6 @@
 import type { ComponentType, SVGProps } from 'react'
 import {
+  IconAccount,
   IconAwards,
   IconDashboard,
   IconSeason,
@@ -23,4 +24,5 @@ export const DASHBOARD_NAV_ITEMS: SidebarNavItem[] = [
   { to: '/stats', label: 'Stats', end: true, Icon: IconStats },
   { to: '/trophy-cabinet', label: 'Trophy Cabinet', end: true, Icon: IconTrophy },
   { to: '/awards', label: 'Awards', end: true, Icon: IconAwards },
+  { to: '/account', label: 'Account', end: true, Icon: IconAccount },
 ]

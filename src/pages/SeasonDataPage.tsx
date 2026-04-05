@@ -28,6 +28,7 @@ import type {
   TeamSlug,
 } from '../config/seasonDataConfig'
 import { apiFetch } from '../lib/api'
+import { useCareer } from '../career/CareerContext'
 import { useDataEntryStatus } from '../hooks/useDataEntryStatus'
 import DataCapNotice from '../components/DataCapNotice'
 import { getConfederationByCode, getNationalityLabel, toNationalityCode } from '../config/nationalities'
@@ -59,7 +60,6 @@ type IntCompetitionRow = {
 }
 
 type AwardRow = { award: string; quantity: number }
-type PlayerProfile = { _id?: string; nationality?: string }
 
 async function postJson(url: string, body: object) {
   const res = await apiFetch(url, {
@@ -72,12 +72,6 @@ async function postJson(url: string, body: object) {
     throw new Error(err.error || `Request failed: ${res.status}`)
   }
   return res.json()
-}
-
-async function fetchJson<T>(url: string): Promise<T> {
-  const res = await apiFetch(url)
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
-  return res.json() as Promise<T>
 }
 
 const COMPETITION_SETS = {
@@ -99,6 +93,7 @@ const TROPHY_SETS = {
 } as const
 
 export default function SeasonDataPage() {
+  const { players, activeCareerPlayerId } = useCareer()
   const dataEntry = useDataEntryStatus()
   const [step, setStep] = useState(0)
   const [team, setTeam] = useState<TeamSlug | ''>('')
@@ -122,23 +117,10 @@ export default function SeasonDataPage() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
   useEffect(() => {
-    let cancelled = false
-    async function loadPlayerNationality() {
-      try {
-        const rows = await fetchJson<PlayerProfile[]>('/api/players')
-        if (cancelled) return
-        if (Array.isArray(rows) && rows.length > 0 && rows[0]?.nationality) {
-          setPlayerNationality(String(rows[0].nationality))
-        }
-      } catch {
-        // Optional context only; do not block form on failure.
-      }
-    }
-    loadPlayerNationality()
-    return () => {
-      cancelled = true
-    }
-  }, [])
+    const sel = activeCareerPlayerId
+    const row = sel ? players.find((p) => String(p._id) === sel) : players[0]
+    setPlayerNationality(row?.nationality ? String(row.nationality) : '')
+  }, [players, activeCareerPlayerId])
 
   const awardSelectGroups = useMemo(() => getAwardSelectGroupsForTeam(team), [team])
 

@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
-import playerPhoto from '../../assets/images/Inam.png'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { TEAM_IMAGES, getNationImage } from '../../config/seasonAssets'
 import { NATIONALITY_OPTIONS, getNationalityLabel, toNationalityCode } from '../../config/nationalities'
 import { TEAM_LABELS, toTeamSlug } from '../../config/seasonDataConfig'
-import { apiFetch } from '../../lib/api'
+import { useCareer } from '../../career/CareerContext'
+import { apiFetch, apiUploadFile, publicUploadUrl } from '../../lib/api'
+import { playerInitials } from '../../lib/playerInitials'
 import type { PlayerRow, TransferRow } from '../../types/dashboard'
+import AvatarCropModal from './AvatarCropModal'
 
 type Props = {
   player: PlayerRow | null
@@ -33,9 +35,14 @@ export default function DashboardPlayerCard({
   loading,
   onRefresh,
 }: Props) {
+  const { setActiveCareerPlayer, refreshPlayers } = useCareer()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [addingCareer, setAddingCareer] = useState(false)
+  const [avatarBusy, setAvatarBusy] = useState(false)
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const avatarFileRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState({
     name: '',
     position: '',
@@ -55,6 +62,8 @@ export default function DashboardPlayerCard({
       retired: Boolean(player?.retired),
     })
   }, [player])
+
+  const avatarCustomUrl = useMemo(() => publicUploadUrl(player?.avatarUrl), [player?.avatarUrl])
 
   const isRetired = editing ? form.retired : Boolean(player?.retired)
   const shownNationality = editing ? form.nationality : player?.nationality
@@ -107,17 +116,143 @@ export default function DashboardPlayerCard({
     }
   }
 
+  const handleAddCareer = async () => {
+    setAddingCareer(true)
+    setError(null)
+    try {
+      const res = await apiFetch('/api/players', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'New career' }),
+      })
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({} as { error?: string }))
+        throw new Error(errBody.error || 'Failed to create career')
+      }
+      const doc = (await res.json()) as { _id?: string }
+      if (doc._id) {
+        await setActiveCareerPlayer(String(doc._id))
+        await refreshPlayers()
+      }
+      onRefresh()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to add career')
+    } finally {
+      setAddingCareer(false)
+    }
+  }
+
+  const handleAvatarFileChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !player?._id) return
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose an image file (JPEG, PNG, GIF, or WebP).')
+      return
+    }
+    setError(null)
+    setCropImageSrc(URL.createObjectURL(file))
+  }
+
+  const handleAvatarCropCancel = () => {
+    if (cropImageSrc) URL.revokeObjectURL(cropImageSrc)
+    setCropImageSrc(null)
+  }
+
+  const handleAvatarCropComplete = async (file: File) => {
+    if (!player?._id) return
+    if (cropImageSrc) {
+      URL.revokeObjectURL(cropImageSrc)
+      setCropImageSrc(null)
+    }
+    setAvatarBusy(true)
+    setError(null)
+    try {
+      const res = await apiUploadFile(`/api/players/${player._id}/avatar`, 'avatar', file)
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(errBody.error || 'Upload failed')
+      }
+      await refreshPlayers()
+      onRefresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setAvatarBusy(false)
+    }
+  }
+
+  const handleRemoveAvatar = async () => {
+    if (!player?._id || !player.avatarUrl) return
+    setAvatarBusy(true)
+    setError(null)
+    try {
+      const res = await apiFetch(`/api/players/${player._id}/avatar`, { method: 'DELETE' })
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(errBody.error || 'Could not remove photo')
+      }
+      await refreshPlayers()
+      onRefresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not remove photo')
+    } finally {
+      setAvatarBusy(false)
+    }
+  }
+
   return (
+    <>
     <div className="dash-player-card">
-      <div className="dash-player-avatar">
-        <img
-          className="dash-player-avatar-img"
-          src={playerPhoto}
-          alt={player?.name ?? 'Player'}
-          width={96}
-          height={96}
-          decoding="async"
+      <div className="dash-player-avatar-wrap">
+        <div className="dash-player-avatar">
+          {avatarCustomUrl ? (
+            <img
+              key={player?.avatarUrl || 'default'}
+              className="dash-player-avatar-img"
+              src={avatarCustomUrl}
+              alt={player?.name ?? 'Player'}
+              width={96}
+              height={96}
+              decoding="async"
+            />
+          ) : (
+            <span className="dash-player-avatar-fallback" aria-hidden>
+              {playerInitials(player?.name ? String(player.name) : '')}
+            </span>
+          )}
+        </div>
+        <input
+          ref={avatarFileRef}
+          type="file"
+          className="dash-player-avatar-file"
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          aria-hidden
+          tabIndex={-1}
+          onChange={handleAvatarFileChosen}
         />
+        {!loading && player?._id ? (
+          <div className="dash-player-avatar-actions">
+            <button
+              type="button"
+              className="dash-player-avatar-btn"
+              disabled={avatarBusy}
+              onClick={() => avatarFileRef.current?.click()}
+            >
+              {avatarBusy ? '…' : player.avatarUrl ? 'Change photo' : 'Upload photo'}
+            </button>
+            {player.avatarUrl ? (
+              <button
+                type="button"
+                className="dash-player-avatar-btn dash-player-avatar-btn--ghost"
+                disabled={avatarBusy}
+                onClick={handleRemoveAvatar}
+              >
+                Remove
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="dash-player-body">
@@ -275,9 +410,19 @@ export default function DashboardPlayerCard({
 
         <div className="dash-player-edit-row">
           {!editing ? (
-            <button type="button" className="dash-player-edit-btn" onClick={() => setEditing(true)}>
-              Edit Profile
-            </button>
+            <div className="dash-player-edit-row-btns">
+              <button type="button" className="dash-player-edit-btn" onClick={() => setEditing(true)}>
+                Edit profile
+              </button>
+              <button
+                type="button"
+                className="dash-player-edit-btn dash-player-edit-btn--secondary"
+                onClick={handleAddCareer}
+                disabled={addingCareer || loading}
+              >
+                {addingCareer ? 'Adding…' : 'New career'}
+              </button>
+            </div>
           ) : (
             <div className="dash-player-edit-form">
               <label className="dash-player-retired-toggle" title="Toggle retired status">
@@ -318,5 +463,13 @@ export default function DashboardPlayerCard({
         </div>
       </div>
     </div>
+    {cropImageSrc ? (
+      <AvatarCropModal
+        imageSrc={cropImageSrc}
+        onCancel={handleAvatarCropCancel}
+        onComplete={handleAvatarCropComplete}
+      />
+    ) : null}
+    </>
   )
 }

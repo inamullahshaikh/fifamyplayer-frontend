@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useCareer } from "../career/CareerContext";
 import type { SeasonDataRow, TrophyRow } from "../types/dashboard";
 import { apiFetch } from "../lib/api";
 
@@ -26,6 +27,7 @@ const initial: TrophyCabinetApiState = {
 };
 
 export function useTrophyCabinetApi(): TrophyCabinetApiState {
+  const { activeCareerPlayerId } = useCareer();
   const [state, setState] = useState<TrophyCabinetApiState>(initial);
 
   useEffect(() => {
@@ -61,7 +63,7 @@ export function useTrophyCabinetApi(): TrophyCabinetApiState {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activeCareerPlayerId]);
 
   return state;
 }
