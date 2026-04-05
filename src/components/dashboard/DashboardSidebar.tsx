@@ -86,11 +86,6 @@ export default function DashboardSidebar({
           <span className="dash-sidebar-link-label">Logout</span>
         </button>
       </div>
-
-      {/* Decorative: only when expanded */}
-      {!collapsed && (
-        <div className="dash-sidebar-glow" aria-hidden />
-      )}
     </aside>
   )
 }
