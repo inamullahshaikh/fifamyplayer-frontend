@@ -14,6 +14,8 @@ import {
 import { normalizeYearlyData } from '../lib/dashboardAggregates'
 import { useChartTheme } from '../hooks/useChartTheme'
 import { apiFetch } from '../lib/api'
+import { useDataEntryStatus } from '../hooks/useDataEntryStatus'
+import DataCapNotice from '../components/DataCapNotice'
 import type { YearlyDataRow } from '../types/dashboard'
 
 const GOALS_COLOR = '#2563eb'
@@ -61,6 +63,7 @@ async function deleteJson(url: string) {
 const YEAR_REGEX = /^\d{4}$/
 
 export default function YearlyDataPage() {
+  const dataEntry = useDataEntryStatus()
   const [data, setData] = useState<YearlyDataRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -98,6 +101,12 @@ export default function YearlyDataPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError('')
+    if (dataEntry.yearCapReached) {
+      setFormError(
+        `You already have ${dataEntry.maxYears} calendar years. Delete or edit an existing year to change totals.`,
+      )
+      return
+    }
     const y = year.trim()
     const g = parseInt(goals, 10) || 0
     const a = parseInt(assists, 10) || 0
@@ -118,6 +127,7 @@ export default function YearlyDataPage() {
       setYear('')
       setGoals('')
       setAssists('')
+      dataEntry.refresh()
       await loadData()
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Save failed')
@@ -150,6 +160,7 @@ export default function YearlyDataPage() {
     try {
       await putJson(`${API}/${editId}`, { year: editYear.trim(), goals: g, assists: a })
       cancelEdit()
+      dataEntry.refresh()
       await loadData()
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Update failed')
@@ -162,6 +173,7 @@ export default function YearlyDataPage() {
     if (!confirm('Delete this year?')) return
     try {
       await deleteJson(`${API}/${id}`)
+      dataEntry.refresh()
       await loadData()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Delete failed')
@@ -233,6 +245,12 @@ export default function YearlyDataPage() {
           </div>
         )}
       </header>
+
+      {dataEntry.yearCapReached && (
+        <DataCapNotice variant="year" title={`Year cap: ${dataEntry.yearCount}/${dataEntry.maxYears} calendar years`}>
+          You cannot add another year; you can still edit or delete rows in the table below.
+        </DataCapNotice>
+      )}
 
       <div className="yearly-main">
         {chartData.length > 0 && (
@@ -343,6 +361,7 @@ export default function YearlyDataPage() {
                     maxLength={4}
                     inputMode="numeric"
                     autoComplete="off"
+                    disabled={dataEntry.yearCapReached}
                   />
                 </label>
                 <label className="yearly-field">
@@ -354,6 +373,7 @@ export default function YearlyDataPage() {
                     placeholder="0"
                     value={goals}
                     onChange={(e) => setGoals(e.target.value)}
+                    disabled={dataEntry.yearCapReached}
                   />
                 </label>
                 <label className="yearly-field">
@@ -365,10 +385,11 @@ export default function YearlyDataPage() {
                     placeholder="0"
                     value={assists}
                     onChange={(e) => setAssists(e.target.value)}
+                    disabled={dataEntry.yearCapReached}
                   />
                 </label>
                 <div className="yearly-form-submit-wrap">
-                  <button type="submit" className="yearly-btn yearly-btn--submit" disabled={saving}>
+                  <button type="submit" className="yearly-btn yearly-btn--submit" disabled={saving || dataEntry.yearCapReached}>
                     {saving ? 'Adding…' : 'Add year'}
                   </button>
                 </div>

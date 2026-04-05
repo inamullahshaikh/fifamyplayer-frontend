@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -24,12 +24,11 @@ import {
   IconRating,
 } from "../components/dashboard/StatIcons";
 import {
-  CLUB_TROPHIES,
+  CLUB_TROPHY_LABEL,
   COMPETITION_LABELS,
   INT_TROPHIES,
   TEAM_LABELS,
 } from "../config/seasonDataConfig";
-import ballonDorLogo from "../assets/images/logos/ballon-dor.png";
 import { STATIC_PLAYER_PROFILE } from "../config/dashboardStatic";
 import {
   getCompetitionLogo,
@@ -51,9 +50,6 @@ import { useChartTheme } from "../hooks/useChartTheme";
 import { useStatsApi } from "../hooks/useStatsApi";
 import type { TrophyRow } from "../types/dashboard";
 
-const TROPHY_LABELS: Record<string, string> = Object.fromEntries(
-  CLUB_TROPHIES.map((t) => [t.id, t.label]),
-);
 const INT_TROPHY_LABELS: Record<string, string> = Object.fromEntries(
   INT_TROPHIES.map((t) => [t.id, t.label]),
 );
@@ -151,6 +147,7 @@ function StatCard({
 
 export default function StatsPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("overview");
+  const [seasonSearch, setSeasonSearch] = useState("");
   const api = useStatsApi();
   const theme = useChartTheme();
   const tooltipStyle = {
@@ -208,6 +205,26 @@ export default function StatsPage() {
         )
       : 0;
 
+  const seasonQueryNorm = seasonSearch.trim().toLowerCase();
+
+  const bySeasonChartFiltered = useMemo(() => {
+    if (!seasonQueryNorm) return api.bySeason;
+    return api.bySeason.filter((s) =>
+      s.season.toLowerCase().includes(seasonQueryNorm),
+    );
+  }, [api.bySeason, seasonQueryNorm]);
+
+  const bySeasonBreakdownFiltered = useMemo(() => {
+    if (!seasonQueryNorm) return api.bySeasonWithBreakdown;
+    return api.bySeasonWithBreakdown.filter((s) =>
+      s.season.toLowerCase().includes(seasonQueryNorm),
+    );
+  }, [api.bySeasonWithBreakdown, seasonQueryNorm]);
+
+  useEffect(() => {
+    if (tab !== "by-season") setSeasonSearch("");
+  }, [tab]);
+
   if (api.error) {
     return (
       <section className="dash-view dash-stats">
@@ -215,17 +232,75 @@ export default function StatsPage() {
           <div className="ph-glow" aria-hidden />
           <div className="ph-inner">
             <div className="ph-text">
-              <p className="ph-kicker"><span className="ph-kicker-dot" aria-hidden />Career Analytics</p>
+              <p className="ph-kicker">
+                <span className="ph-kicker-dot" aria-hidden />
+                Career Analytics
+              </p>
               <h1 className="ph-title">Stats</h1>
-              <p className="ph-desc">Complete career statistics and breakdowns.</p>
+              <p className="ph-desc">
+                Complete career statistics and breakdowns.
+              </p>
             </div>
-            <svg className="ph-deco" aria-hidden viewBox="0 0 200 130" fill="none">
-              <rect x="10"  y="80" width="22" height="42" rx="4" fill="currentColor" fillOpacity="0.15" />
-              <rect x="42"  y="55" width="22" height="67" rx="4" fill="currentColor" fillOpacity="0.2"  />
-              <rect x="74"  y="35" width="22" height="87" rx="4" fill="currentColor" fillOpacity="0.25" />
-              <rect x="106" y="60" width="22" height="62" rx="4" fill="currentColor" fillOpacity="0.2"  />
-              <rect x="138" y="20" width="22" height="102" rx="4" fill="currentColor" fillOpacity="0.3" />
-              <rect x="170" y="45" width="22" height="77"  rx="4" fill="currentColor" fillOpacity="0.22" />
+            <svg
+              className="ph-deco"
+              aria-hidden
+              viewBox="0 0 200 130"
+              fill="none"
+            >
+              <rect
+                x="10"
+                y="80"
+                width="22"
+                height="42"
+                rx="4"
+                fill="currentColor"
+                fillOpacity="0.15"
+              />
+              <rect
+                x="42"
+                y="55"
+                width="22"
+                height="67"
+                rx="4"
+                fill="currentColor"
+                fillOpacity="0.2"
+              />
+              <rect
+                x="74"
+                y="35"
+                width="22"
+                height="87"
+                rx="4"
+                fill="currentColor"
+                fillOpacity="0.25"
+              />
+              <rect
+                x="106"
+                y="60"
+                width="22"
+                height="62"
+                rx="4"
+                fill="currentColor"
+                fillOpacity="0.2"
+              />
+              <rect
+                x="138"
+                y="20"
+                width="22"
+                height="102"
+                rx="4"
+                fill="currentColor"
+                fillOpacity="0.3"
+              />
+              <rect
+                x="170"
+                y="45"
+                width="22"
+                height="77"
+                rx="4"
+                fill="currentColor"
+                fillOpacity="0.22"
+              />
             </svg>
           </div>
         </header>
@@ -242,19 +317,76 @@ export default function StatsPage() {
         <div className="ph-glow" aria-hidden />
         <div className="ph-inner">
           <div className="ph-text">
-            <p className="ph-kicker"><span className="ph-kicker-dot" aria-hidden />Career Analytics</p>
+            <p className="ph-kicker">
+              <span className="ph-kicker-dot" aria-hidden />
+              Career Analytics
+            </p>
             <h1 className="ph-title">Stats</h1>
             <p className="ph-desc">
-              Full career picture: club &amp; international totals, season and year breakdowns, competitions, teams, and highlights.
+              Full career picture: club &amp; international totals, season and
+              year breakdowns, competitions, teams, and highlights.
             </p>
           </div>
-          <svg className="ph-deco" aria-hidden viewBox="0 0 200 130" fill="none">
-            <rect x="10"  y="80" width="22" height="42" rx="4" fill="currentColor" fillOpacity="0.15" />
-            <rect x="42"  y="55" width="22" height="67" rx="4" fill="currentColor" fillOpacity="0.2"  />
-            <rect x="74"  y="35" width="22" height="87" rx="4" fill="currentColor" fillOpacity="0.25" />
-            <rect x="106" y="60" width="22" height="62" rx="4" fill="currentColor" fillOpacity="0.2"  />
-            <rect x="138" y="20" width="22" height="102" rx="4" fill="currentColor" fillOpacity="0.3" />
-            <rect x="170" y="45" width="22" height="77"  rx="4" fill="currentColor" fillOpacity="0.22" />
+          <svg
+            className="ph-deco"
+            aria-hidden
+            viewBox="0 0 200 130"
+            fill="none"
+          >
+            <rect
+              x="10"
+              y="80"
+              width="22"
+              height="42"
+              rx="4"
+              fill="currentColor"
+              fillOpacity="0.15"
+            />
+            <rect
+              x="42"
+              y="55"
+              width="22"
+              height="67"
+              rx="4"
+              fill="currentColor"
+              fillOpacity="0.2"
+            />
+            <rect
+              x="74"
+              y="35"
+              width="22"
+              height="87"
+              rx="4"
+              fill="currentColor"
+              fillOpacity="0.25"
+            />
+            <rect
+              x="106"
+              y="60"
+              width="22"
+              height="62"
+              rx="4"
+              fill="currentColor"
+              fillOpacity="0.2"
+            />
+            <rect
+              x="138"
+              y="20"
+              width="22"
+              height="102"
+              rx="4"
+              fill="currentColor"
+              fillOpacity="0.3"
+            />
+            <rect
+              x="170"
+              y="45"
+              width="22"
+              height="77"
+              rx="4"
+              fill="currentColor"
+              fillOpacity="0.22"
+            />
           </svg>
         </div>
         {!api.loading && (
@@ -400,19 +532,6 @@ export default function StatsPage() {
                           </span>
                           <span className="stats-trophy-txt">
                             Int. trophies
-                          </span>
-                        </div>
-                        <div className="stats-trophy-item">
-                          <img
-                            src={ballonDorLogo}
-                            alt=""
-                            className="stats-trophy-img"
-                          />
-                          <span className="stats-trophy-num">
-                            {api.awardsTotalQty}
-                          </span>
-                          <span className="stats-trophy-txt">
-                            Award entries
                           </span>
                         </div>
                       </div>
@@ -656,7 +775,7 @@ export default function StatsPage() {
                         <ul className="stats-club-trophy-list">
                           {clubTrophyBreakdown.map(([trophyId, count]) => {
                             const logo = getTrophyLogo(trophyId);
-                            const name = TROPHY_LABELS[trophyId] ?? trophyId;
+                            const name = CLUB_TROPHY_LABEL[trophyId] ?? trophyId;
                             return (
                               <li
                                 key={trophyId}
@@ -908,264 +1027,338 @@ export default function StatsPage() {
             )}
 
             {tab === "by-season" && (
-              <div className="stats-section">
-                <h2 className="stats-section-title">By season</h2>
-                <p className="stats-section-sub muted-text">
-                  Season-by-season breakdown by competition — club and
-                  international.
-                </p>
+              <div className="stats-section stats-section--by-season">
+                <div className="stats-season-intro">
+                  <h2 className="stats-section-title stats-season-intro-title">
+                    By season
+                  </h2>
+                  <p className="stats-section-sub muted-text stats-season-intro-sub">
+                    Season-by-season breakdown by competition — club and
+                    international.
+                  </p>
+                  {api.bySeasonWithBreakdown.length > 0 ? (
+                    <div className="stats-season-toolbar">
+                      <div className="stats-season-search-wrap">
+                        <label
+                          htmlFor="stats-season-search"
+                          className="stats-season-search-label"
+                        >
+                          Find a season
+                        </label>
+                        <div className="stats-season-search-field">
+                          <span
+                            className="stats-season-search-icon"
+                            aria-hidden
+                          >
+                            <svg
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <circle cx="11" cy="11" r="8" />
+                              <path d="m21 21-4.3-4.3" />
+                            </svg>
+                          </span>
+                          <input
+                            id="stats-season-search"
+                            type="search"
+                            className="stats-season-search-input"
+                            placeholder="e.g. 2023/24"
+                            value={seasonSearch}
+                            onChange={(e) => setSeasonSearch(e.target.value)}
+                            autoComplete="off"
+                            spellCheck={false}
+                          />
+                        </div>
+                      </div>
+                      {seasonQueryNorm ? (
+                        <p
+                          className="stats-season-search-meta muted-text"
+                          role="status"
+                        >
+                          Showing {bySeasonBreakdownFiltered.length} of{" "}
+                          {api.bySeasonWithBreakdown.length} seasons
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
                 {api.bySeasonWithBreakdown.length > 0 ? (
                   <>
-                    <div className="stats-tab-visuals stats-charts-stack">
-                      <div className="stats-chart-wrap stats-chart-wrap--framed">
-                        <ResponsiveContainer width="100%" height={300}>
-                          <BarChart
-                            data={api.bySeason}
-                            margin={{ top: 12, right: 12, left: -8, bottom: 4 }}
-                          >
-                            <CartesianGrid
-                              strokeDasharray="3 3"
-                              stroke={theme.grid}
-                              vertical={false}
-                            />
-                            <XAxis
-                              dataKey="season"
-                              tick={{ fill: theme.axis, fontSize: 10 }}
-                              tickLine={false}
-                              axisLine={{ stroke: theme.grid }}
-                            />
-                            <YAxis
-                              tick={{ fill: theme.axis, fontSize: 11 }}
-                              tickLine={false}
-                              axisLine={{ stroke: theme.grid }}
-                              allowDecimals={false}
-                            />
-                            <Tooltip
-                              contentStyle={tooltipStyle}
-                              labelStyle={{ color: theme.axis }}
-                            />
-                            <Legend wrapperStyle={{ fontSize: 12 }} />
-                            <Bar
-                              dataKey="goals"
-                              name="Goals"
-                              fill={GOALS_COLOR}
-                              radius={[5, 5, 0, 0]}
-                              maxBarSize={40}
-                            />
-                            <Bar
-                              dataKey="assists"
-                              name="Assists"
-                              fill={ASSISTS_COLOR}
-                              radius={[5, 5, 0, 0]}
-                              maxBarSize={40}
-                            />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-
-                      <StatsBySeasonExtraCharts
-                        api={api}
-                        theme={theme}
-                        tooltipStyle={tooltipStyle}
-                      />
-                    </div>
-
-                    <div className="stats-tab-data stats-season-breakdown-list">
-                      {api.bySeasonWithBreakdown.map((sb) => (
-                        <article
-                          key={sb.season}
-                          className="stats-season-breakdown-card"
-                        >
-                          <header className="stats-season-breakdown-header">
-                            <h3 className="stats-season-breakdown-title">
-                              {sb.season}
-                            </h3>
-                            <div className="stats-season-breakdown-totals">
-                              <span title="Appearances">
-                                {sb.totalApps} app
-                              </span>
-                              <span className="stats-season-breakdown-g">
-                                {sb.totalGoals} G
-                              </span>
-                              <span className="stats-season-breakdown-a">
-                                {sb.totalAssists} A
-                              </span>
-                              {sb.avgrating != null && (
-                                <span className="stats-season-breakdown-rating">
-                                  ★ {sb.avgrating.toFixed(2)}
-                                </span>
-                              )}
-                            </div>
-                          </header>
-
-                          <div className="stats-season-breakdown-body">
-                            {sb.clubRows.length > 0 && (
-                              <section className="stats-season-breakdown-block">
-                                <h4 className="stats-season-breakdown-subtitle">
-                                  {uclLogo && (
-                                    <img
-                                      src={uclLogo}
-                                      alt=""
-                                      className="stats-season-breakdown-subtitle-icon"
-                                    />
-                                  )}
-                                  Club
-                                </h4>
-                                <ul className="stats-season-breakdown-rows">
-                                  {sb.clubRows.map((row, i) => {
-                                    const compLogo = getCompetitionLogo(
-                                      row.competition,
-                                    );
-                                    const compLabel =
-                                      COMPETITION_LABELS[row.competition] ??
-                                      row.competition;
-                                    const teamImg = row.team
-                                      ? TEAM_IMAGES[row.team]
-                                      : null;
-                                    const teamLabel = row.team
-                                      ? (TEAM_LABELS[row.team] ?? row.team)
-                                      : null;
-                                    return (
-                                      <li
-                                        key={`${row.competition}-${row.team ?? ""}-${i}`}
-                                        className="stats-season-breakdown-row"
-                                      >
-                                        <div className="stats-season-breakdown-logos">
-                                          {compLogo ? (
-                                            <img
-                                              src={compLogo}
-                                              alt=""
-                                              className="stats-season-breakdown-logo"
-                                            />
-                                          ) : (
-                                            <span className="stats-season-breakdown-fallback">
-                                              {compLabel.slice(0, 2)}
-                                            </span>
-                                          )}
-                                          {teamImg && (
-                                            <img
-                                              src={teamImg}
-                                              alt=""
-                                              className="stats-season-breakdown-team-img"
-                                              title={teamLabel ?? ""}
-                                            />
-                                          )}
-                                        </div>
-                                        <div className="stats-season-breakdown-row-meta">
-                                          <span className="stats-season-breakdown-row-name">
-                                            {compLabel}
-                                          </span>
-                                          {teamLabel && (
-                                            <span className="stats-season-breakdown-row-team">
-                                              {teamLabel}
-                                            </span>
-                                          )}
-                                        </div>
-                                        <div className="stats-season-breakdown-row-stats">
-                                          <span className="stats-season-breakdown-stat">
-                                            {row.apps} app
-                                          </span>
-                                          <span className="stats-season-breakdown-stat stats-season-breakdown-g">
-                                            {row.goals} G
-                                          </span>
-                                          <span className="stats-season-breakdown-stat stats-season-breakdown-a">
-                                            {row.assists} A
-                                          </span>
-                                          {row.avgrating != null && (
-                                            <span className="stats-season-breakdown-stat stats-season-breakdown-rating">
-                                              ★ {row.avgrating.toFixed(2)}
-                                            </span>
-                                          )}
-                                        </div>
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              </section>
-                            )}
-
-                            {sb.intRows.length > 0 && (
-                              <section className="stats-season-breakdown-block">
-                                <h4 className="stats-season-breakdown-subtitle">
-                                  {euroLogo && (
-                                    <img
-                                      src={euroLogo}
-                                      alt=""
-                                      className="stats-season-breakdown-subtitle-icon"
-                                    />
-                                  )}
-                                  International
-                                </h4>
-                                <ul className="stats-season-breakdown-rows">
-                                  {sb.intRows.map((row, i) => {
-                                    const compLogo = getCompetitionLogo(
-                                      row.competition,
-                                    );
-                                    const compLabel =
-                                      COMPETITION_LABELS[row.competition] ??
-                                      row.competition;
-                                    const nationImg = getNationImage(
-                                      STATIC_PLAYER_PROFILE.nationality,
-                                    );
-                                    return (
-                                      <li
-                                        key={`${row.competition}-${i}`}
-                                        className="stats-season-breakdown-row"
-                                      >
-                                        <div className="stats-season-breakdown-logos">
-                                          {compLogo ? (
-                                            <img
-                                              src={compLogo}
-                                              alt=""
-                                              className="stats-season-breakdown-logo"
-                                            />
-                                          ) : (
-                                            <span className="stats-season-breakdown-fallback">
-                                              {compLabel.slice(0, 2)}
-                                            </span>
-                                          )}
-                                          {nationImg && (
-                                            <img
-                                              src={nationImg}
-                                              alt=""
-                                              className="stats-season-breakdown-nation-img"
-                                              title={
-                                                STATIC_PLAYER_PROFILE.nationality
-                                              }
-                                            />
-                                          )}
-                                        </div>
-                                        <div className="stats-season-breakdown-row-meta">
-                                          <span className="stats-season-breakdown-row-name">
-                                            {compLabel}
-                                          </span>
-                                        </div>
-                                        <div className="stats-season-breakdown-row-stats">
-                                          <span className="stats-season-breakdown-stat">
-                                            {row.apps} app
-                                          </span>
-                                          <span className="stats-season-breakdown-stat stats-season-breakdown-g">
-                                            {row.goals} G
-                                          </span>
-                                          <span className="stats-season-breakdown-stat stats-season-breakdown-a">
-                                            {row.assists} A
-                                          </span>
-                                          {row.avgrating != null && (
-                                            <span className="stats-season-breakdown-stat stats-season-breakdown-rating">
-                                              ★ {row.avgrating.toFixed(2)}
-                                            </span>
-                                          )}
-                                        </div>
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              </section>
-                            )}
+                    {bySeasonBreakdownFiltered.length === 0 ? (
+                      <p className="stats-empty muted-text" role="status">
+                        No seasons match &ldquo;{seasonSearch.trim()}&rdquo;.
+                        Clear the search to see all seasons.
+                      </p>
+                    ) : (
+                      <>
+                        <div className="stats-tab-visuals stats-charts-stack">
+                          <div className="stats-chart-wrap stats-chart-wrap--framed">
+                            <ResponsiveContainer width="100%" height={300}>
+                              <BarChart
+                                data={bySeasonChartFiltered}
+                                margin={{
+                                  top: 12,
+                                  right: 12,
+                                  left: -8,
+                                  bottom: 4,
+                                }}
+                              >
+                                <CartesianGrid
+                                  strokeDasharray="3 3"
+                                  stroke={theme.grid}
+                                  vertical={false}
+                                />
+                                <XAxis
+                                  dataKey="season"
+                                  tick={{ fill: theme.axis, fontSize: 10 }}
+                                  tickLine={false}
+                                  axisLine={{ stroke: theme.grid }}
+                                />
+                                <YAxis
+                                  tick={{ fill: theme.axis, fontSize: 11 }}
+                                  tickLine={false}
+                                  axisLine={{ stroke: theme.grid }}
+                                  allowDecimals={false}
+                                />
+                                <Tooltip
+                                  contentStyle={tooltipStyle}
+                                  labelStyle={{ color: theme.axis }}
+                                />
+                                <Legend wrapperStyle={{ fontSize: 12 }} />
+                                <Bar
+                                  dataKey="goals"
+                                  name="Goals"
+                                  fill={GOALS_COLOR}
+                                  radius={[5, 5, 0, 0]}
+                                  maxBarSize={40}
+                                />
+                                <Bar
+                                  dataKey="assists"
+                                  name="Assists"
+                                  fill={ASSISTS_COLOR}
+                                  radius={[5, 5, 0, 0]}
+                                  maxBarSize={40}
+                                />
+                              </BarChart>
+                            </ResponsiveContainer>
                           </div>
-                        </article>
-                      ))}
-                    </div>
+
+                          <StatsBySeasonExtraCharts
+                            api={api}
+                            theme={theme}
+                            tooltipStyle={tooltipStyle}
+                            bySeasonForCharts={
+                              seasonQueryNorm
+                                ? bySeasonChartFiltered
+                                : undefined
+                            }
+                          />
+                        </div>
+
+                        <div className="stats-tab-data stats-season-breakdown-list">
+                          {bySeasonBreakdownFiltered.map((sb) => (
+                            <article
+                              key={sb.season}
+                              className="stats-season-breakdown-card"
+                            >
+                              <header className="stats-season-breakdown-header">
+                                <h3 className="stats-season-breakdown-title">
+                                  {sb.season}
+                                </h3>
+                                <div className="stats-season-breakdown-totals">
+                                  <span title="Appearances">
+                                    {sb.totalApps} app
+                                  </span>
+                                  <span className="stats-season-breakdown-g">
+                                    {sb.totalGoals} G
+                                  </span>
+                                  <span className="stats-season-breakdown-a">
+                                    {sb.totalAssists} A
+                                  </span>
+                                  {sb.avgrating != null && (
+                                    <span className="stats-season-breakdown-rating">
+                                      ★ {sb.avgrating.toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
+                              </header>
+
+                              <div className="stats-season-breakdown-body">
+                                {sb.clubRows.length > 0 && (
+                                  <section className="stats-season-breakdown-block">
+                                    <h4 className="stats-season-breakdown-subtitle">
+                                      {uclLogo && (
+                                        <img
+                                          src={uclLogo}
+                                          alt=""
+                                          className="stats-season-breakdown-subtitle-icon"
+                                        />
+                                      )}
+                                      Club
+                                    </h4>
+                                    <ul className="stats-season-breakdown-rows">
+                                      {sb.clubRows.map((row, i) => {
+                                        const compLogo = getCompetitionLogo(
+                                          row.competition,
+                                        );
+                                        const compLabel =
+                                          COMPETITION_LABELS[row.competition] ??
+                                          row.competition;
+                                        const teamImg = row.team
+                                          ? TEAM_IMAGES[row.team]
+                                          : null;
+                                        const teamLabel = row.team
+                                          ? (TEAM_LABELS[row.team] ?? row.team)
+                                          : null;
+                                        return (
+                                          <li
+                                            key={`${row.competition}-${row.team ?? ""}-${i}`}
+                                            className="stats-season-breakdown-row"
+                                          >
+                                            <div className="stats-season-breakdown-logos">
+                                              {compLogo ? (
+                                                <img
+                                                  src={compLogo}
+                                                  alt=""
+                                                  className="stats-season-breakdown-logo"
+                                                />
+                                              ) : (
+                                                <span className="stats-season-breakdown-fallback">
+                                                  {compLabel.slice(0, 2)}
+                                                </span>
+                                              )}
+                                              {teamImg && (
+                                                <img
+                                                  src={teamImg}
+                                                  alt=""
+                                                  className="stats-season-breakdown-team-img"
+                                                  title={teamLabel ?? ""}
+                                                />
+                                              )}
+                                            </div>
+                                            <div className="stats-season-breakdown-row-meta">
+                                              <span className="stats-season-breakdown-row-name">
+                                                {compLabel}
+                                              </span>
+                                              {teamLabel && (
+                                                <span className="stats-season-breakdown-row-team">
+                                                  {teamLabel}
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div className="stats-season-breakdown-row-stats">
+                                              <span className="stats-season-breakdown-stat">
+                                                {row.apps} app
+                                              </span>
+                                              <span className="stats-season-breakdown-stat stats-season-breakdown-g">
+                                                {row.goals} G
+                                              </span>
+                                              <span className="stats-season-breakdown-stat stats-season-breakdown-a">
+                                                {row.assists} A
+                                              </span>
+                                              {row.avgrating != null && (
+                                                <span className="stats-season-breakdown-stat stats-season-breakdown-rating">
+                                                  ★ {row.avgrating.toFixed(2)}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  </section>
+                                )}
+
+                                {sb.intRows.length > 0 && (
+                                  <section className="stats-season-breakdown-block">
+                                    <h4 className="stats-season-breakdown-subtitle">
+                                      {euroLogo && (
+                                        <img
+                                          src={euroLogo}
+                                          alt=""
+                                          className="stats-season-breakdown-subtitle-icon"
+                                        />
+                                      )}
+                                      International
+                                    </h4>
+                                    <ul className="stats-season-breakdown-rows">
+                                      {sb.intRows.map((row, i) => {
+                                        const compLogo = getCompetitionLogo(
+                                          row.competition,
+                                        );
+                                        const compLabel =
+                                          COMPETITION_LABELS[row.competition] ??
+                                          row.competition;
+                                        const nationImg = getNationImage(
+                                          STATIC_PLAYER_PROFILE.nationality,
+                                        );
+                                        return (
+                                          <li
+                                            key={`${row.competition}-${i}`}
+                                            className="stats-season-breakdown-row"
+                                          >
+                                            <div className="stats-season-breakdown-logos">
+                                              {compLogo ? (
+                                                <img
+                                                  src={compLogo}
+                                                  alt=""
+                                                  className="stats-season-breakdown-logo"
+                                                />
+                                              ) : (
+                                                <span className="stats-season-breakdown-fallback">
+                                                  {compLabel.slice(0, 2)}
+                                                </span>
+                                              )}
+                                              {nationImg && (
+                                                <img
+                                                  src={nationImg}
+                                                  alt=""
+                                                  className="stats-season-breakdown-nation-img"
+                                                  title={
+                                                    STATIC_PLAYER_PROFILE.nationality
+                                                  }
+                                                />
+                                              )}
+                                            </div>
+                                            <div className="stats-season-breakdown-row-meta">
+                                              <span className="stats-season-breakdown-row-name">
+                                                {compLabel}
+                                              </span>
+                                            </div>
+                                            <div className="stats-season-breakdown-row-stats">
+                                              <span className="stats-season-breakdown-stat">
+                                                {row.apps} app
+                                              </span>
+                                              <span className="stats-season-breakdown-stat stats-season-breakdown-g">
+                                                {row.goals} G
+                                              </span>
+                                              <span className="stats-season-breakdown-stat stats-season-breakdown-a">
+                                                {row.assists} A
+                                              </span>
+                                              {row.avgrating != null && (
+                                                <span className="stats-season-breakdown-stat stats-season-breakdown-rating">
+                                                  ★ {row.avgrating.toFixed(2)}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  </section>
+                                )}
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </>
                 ) : (
                   <p className="stats-empty muted-text">No season data yet.</p>

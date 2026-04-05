@@ -10,7 +10,7 @@ import {
   statsByTeamWithBreakdown,
   statsByYear,
 } from '../lib/statsAggregates'
-import type { AwardRow, IntDataRow, SeasonDataRow, TrophyRow, YearlyDataRow } from '../types/dashboard'
+import type { IntDataRow, SeasonDataRow, TrophyRow, YearlyDataRow } from '../types/dashboard'
 import { apiFetch } from '../lib/api'
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -36,8 +36,6 @@ export type StatsApiState = {
   best: ReturnType<typeof bestPerformances>
   byCompetition: { competition: string; apps: number; goals: number; assists: number; avgrating?: number }[]
   byTeam: import('../lib/statsAggregates').TeamWithBreakdown[]
-  awardsRows: AwardRow[]
-  awardsTotalQty: number
 }
 
 export function useStatsApi(): StatsApiState {
@@ -58,8 +56,6 @@ export function useStatsApi(): StatsApiState {
     best: {} as ReturnType<typeof bestPerformances>,
     byCompetition: [],
     byTeam: [],
-    awardsRows: [],
-    awardsTotalQty: 0,
   })
 
   useEffect(() => {
@@ -68,13 +64,12 @@ export function useStatsApi(): StatsApiState {
     async function load() {
       setState((s) => ({ ...s, loading: true, error: null }))
       try {
-        const [clubRaw, intRaw, yearlyRaw, clubT, intT, awardsRaw] = await Promise.all([
+        const [clubRaw, intRaw, yearlyRaw, clubT, intT] = await Promise.all([
           fetchJson<SeasonDataRow[]>('/api/season_data'),
           fetchJson<IntDataRow[]>('/api/int_data'),
           fetchJson<YearlyDataRow[]>('/api/yearly_data'),
           fetchJson<TrophyRow[]>('/api/season_trophies'),
           fetchJson<TrophyRow[]>('/api/int_trophies'),
-          fetchJson<AwardRow[]>('/api/season_awards'),
         ])
 
         if (cancelled) return
@@ -82,12 +77,6 @@ export function useStatsApi(): StatsApiState {
         const clubData = Array.isArray(clubRaw) ? clubRaw : []
         const intData = Array.isArray(intRaw) ? intRaw : []
         const yearlyData = Array.isArray(yearlyRaw) ? yearlyRaw : []
-        const awardsRows = Array.isArray(awardsRaw) ? awardsRaw : []
-        const awardsTotalQty = awardsRows.reduce(
-          (s, a) => s + (Number(a.quantity) > 0 ? Number(a.quantity) : 1),
-          0
-        )
-
         setState({
           loading: false,
           error: null,
@@ -105,8 +94,6 @@ export function useStatsApi(): StatsApiState {
           best: bestPerformances(clubData, intData, yearlyData),
           byCompetition: statsByCompetition(clubData, intData),
           byTeam: statsByTeamWithBreakdown(clubData),
-          awardsRows,
-          awardsTotalQty,
         })
       } catch (e) {
         if (cancelled) return

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import {
   Area,
   AreaChart,
@@ -6,6 +6,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -82,7 +83,7 @@ export function AwardsTripleSpotlight({ rows }: { rows: AwardRow[] }) {
         <div
           key={it.id}
           className="awards-spot-card"
-          style={{ "--spot-i": i } as React.CSSProperties}
+          style={{ "--spot-i": i } as CSSProperties}
         >
           <div className="awards-spot-glow" aria-hidden />
           <div className="awards-spot-logo-wrap">
@@ -120,7 +121,7 @@ export function AwardsAnalyticsCharts({ rows }: { rows: AwardRow[] }) {
         border: `1px solid ${theme.tooltipBorder}`,
         borderRadius: 10,
         fontSize: 12,
-      }) as React.CSSProperties,
+      }) as CSSProperties,
     [theme],
   );
 
@@ -146,7 +147,9 @@ export function AwardsAnalyticsCharts({ rows }: { rows: AwardRow[] }) {
           Analytics
         </h2>
         <p className="awards-section-desc muted-text">
-          Where your honours concentrate — by award and by season.
+          Where your honours concentrate — by award and by season. Man of the Match
+          is left out of these charts so higher-volume MOTM entries don’t hide rarer
+          awards.
         </p>
       </div>
       <div className="stats-analytics-grid awards-analytics-grid">
@@ -209,7 +212,7 @@ export function AwardsAnalyticsCharts({ rows }: { rows: AwardRow[] }) {
 
         <ChartPanel
           title="Honours by season"
-          insight="Total award entries per season (chronological)."
+          insight="Total award entries per season (chronological), excluding Man of the Match."
         >
           {bySeason.length === 0 ? (
             <p className="awards-chart-empty muted-text">
@@ -272,21 +275,21 @@ export function AwardsAnalyticsCharts({ rows }: { rows: AwardRow[] }) {
 
         <ChartPanel
           title="Mix of honours"
-          insight="Proportional share of your top award types by total quantity."
+          insight="Proportional share of your top award types by total quantity (MOTM excluded)."
         >
           {pieSlices.length === 0 ? (
             <p className="awards-chart-empty muted-text">No data.</p>
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
                   data={pieSlices}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
-                  cy="50%"
-                  innerRadius={58}
-                  outerRadius={100}
+                  cy="46%"
+                  innerRadius={52}
+                  outerRadius={92}
                   paddingAngle={3}
                   isAnimationActive
                   animationDuration={900}
@@ -301,6 +304,13 @@ export function AwardsAnalyticsCharts({ rows }: { rows: AwardRow[] }) {
                     value == null ? 0 : Number(value),
                     "entries",
                   ]}
+                />
+                <Legend
+                  verticalAlign="bottom"
+                  wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
+                  formatter={(value: string) =>
+                    value.length > 28 ? `${value.slice(0, 26)}…` : value
+                  }
                 />
               </PieChart>
             </ResponsiveContainer>

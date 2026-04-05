@@ -1,12 +1,16 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
+  EmptyTrophyCabinetIllustration,
+  TrophyPhysicalCabinet,
+} from "../components/TrophyPhysicalCabinet";
+import {
   IconTrophyClub,
   IconTrophyIntl,
 } from "../components/dashboard/AchievementIcons";
 import { STATIC_PLAYER_PROFILE } from "../config/dashboardStatic";
 import {
-  CLUB_TROPHIES,
+  CLUB_TROPHY_LABEL,
   INT_TROPHIES,
   TEAM_LABELS,
 } from "../config/seasonDataConfig";
@@ -19,9 +23,6 @@ import { useSimultaneousCountUp } from "../hooks/useSimultaneousCountUp";
 import { useTrophyCabinetApi } from "../hooks/useTrophyCabinetApi";
 import type { SeasonDataRow, TrophyRow } from "../types/dashboard";
 
-const CLUB_TROPHY_LABEL: Record<string, string> = Object.fromEntries(
-  CLUB_TROPHIES.map((t) => [t.id, t.label]),
-);
 const INT_TROPHY_LABEL: Record<string, string> = Object.fromEntries(
   INT_TROPHIES.map((t) => [t.id, t.label]),
 );
@@ -338,7 +339,7 @@ export default function TrophyCabinetPage() {
 
   if (api.error) {
     return (
-      <section className="dash-view trophy-cabinet">
+      <section className="dash-view trophy-cabinet trophy-cabinet-page">
         <header className="ph ph--trophies">
           <div className="ph-glow" aria-hidden />
           <div className="ph-inner">
@@ -364,7 +365,7 @@ export default function TrophyCabinetPage() {
   }
 
   return (
-    <section className="dash-view trophy-cabinet">
+    <section className="dash-view trophy-cabinet trophy-cabinet-page">
       <header className="ph ph--trophies">
         <div className="ph-glow" aria-hidden />
         <div className="ph-inner">
@@ -413,17 +414,25 @@ export default function TrophyCabinetPage() {
 
           {total === 0 ? (
             <div className="trophy-cab-zero">
+              <div className="trophy-cab-zero-visual" aria-hidden>
+                <EmptyTrophyCabinetIllustration className="trophy-cab-zero-svg" />
+              </div>
               <p className="trophy-cab-zero-title">Your cabinet is empty</p>
               <p className="trophy-cab-zero-text muted-text">
                 When you record club and international trophies in{" "}
                 <Link to="/season-data" className="trophy-cab-link">
                   Season data
                 </Link>
-                , they&apos;ll appear here with logos and season tags.
+                , they&apos;ll fill this cabinet with logos, shelves, and season
+                tags.
               </p>
             </div>
           ) : (
             <>
+              <TrophyPhysicalCabinet
+                clubTrophies={api.clubTrophies}
+                intTrophies={api.intTrophies}
+              />
               {seasonSummaries.length > 0 && (
                 <section
                   className="tcab-block tcab-block--lead"

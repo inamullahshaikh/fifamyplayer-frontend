@@ -28,6 +28,8 @@ import type {
   TeamSlug,
 } from '../config/seasonDataConfig'
 import { apiFetch } from '../lib/api'
+import { useDataEntryStatus } from '../hooks/useDataEntryStatus'
+import DataCapNotice from '../components/DataCapNotice'
 import { getConfederationByCode, getNationalityLabel, toNationalityCode } from '../config/nationalities'
 
 const STEPS = [
@@ -97,6 +99,7 @@ const TROPHY_SETS = {
 } as const
 
 export default function SeasonDataPage() {
+  const dataEntry = useDataEntryStatus()
   const [step, setStep] = useState(0)
   const [team, setTeam] = useState<TeamSlug | ''>('')
   const [playerNationality, setPlayerNationality] = useState('')
@@ -269,6 +272,12 @@ export default function SeasonDataPage() {
   }
 
   const handleSave = async () => {
+    if (newSeasonBlocked) {
+      setSaveError(
+        `You already have ${dataEntry.maxSeasons} seasons. Use a season you already logged (or edit/delete existing data) before adding a new season label.`,
+      )
+      return
+    }
     if (!team || !season.trim()) return
     for (const a of awards) {
       const name = a.award.trim()
@@ -312,6 +321,7 @@ export default function SeasonDataPage() {
         }
       }
       setSaveSuccess(true)
+      dataEntry.refresh()
     } catch (e: unknown) {
       setSaveError(e instanceof Error ? e.message : 'Save failed')
     } finally {
@@ -322,6 +332,12 @@ export default function SeasonDataPage() {
   const progressPct = ((step + 1) / STEPS.length) * 100
   const selectedTeamLabel = TEAMS_SORTED_BY_LEAGUE.find((t) => t.id === team)?.label
   const showContext = team && season.trim() && !saveSuccess
+
+  const seasonTrimmed = season.trim()
+  const newSeasonBlocked =
+    dataEntry.seasonCapReached &&
+    Boolean(seasonTrimmed) &&
+    !dataEntry.existingSeasons.includes(seasonTrimmed)
 
   const resetForNewSeason = () => {
     setSaveSuccess(false)
@@ -393,6 +409,16 @@ export default function SeasonDataPage() {
           </p>
         </div>
       </header>
+
+      {dataEntry.seasonCapReached && (
+        <DataCapNotice
+          variant="season"
+          title={`Season cap: ${dataEntry.seasonCount}/${dataEntry.maxSeasons} distinct seasons`}
+        >
+          You can still add club stats, trophies, and awards for any season you already use; you cannot start a new
+          season label.
+        </DataCapNotice>
+      )}
 
       <div className="season-stepper-wrap">
         <div className="season-stepper">
@@ -706,7 +732,11 @@ export default function SeasonDataPage() {
               {awards.length === 0 && (
                 <p className="season-awards-empty muted-text">No awards added yet.</p>
               )}
-              <button type="button" className="season-btn season-btn--add" onClick={addAward}>
+              <button
+                type="button"
+                className="season-btn season-btn--add"
+                onClick={addAward}
+              >
                 + Add award
               </button>
             </div>
@@ -736,7 +766,7 @@ export default function SeasonDataPage() {
             type="button"
             className="season-btn season-btn--save"
             onClick={handleSave}
-            disabled={saving || !team || !season.trim()}
+            disabled={saving || !team || !season.trim() || newSeasonBlocked}
           >
             {saving ? 'Saving…' : 'Save season data'}
           </button>
@@ -752,7 +782,11 @@ export default function SeasonDataPage() {
       {saveSuccess && (
         <div className="season-alert season-alert--success season-alert--with-action" role="status">
           <span>Season data saved successfully.</span>
-          <button type="button" className="season-btn season-btn--outline" onClick={resetForNewSeason}>
+          <button
+            type="button"
+            className="season-btn season-btn--outline"
+            onClick={resetForNewSeason}
+          >
             Add another season
           </button>
         </div>

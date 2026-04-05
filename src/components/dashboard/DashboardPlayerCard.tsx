@@ -76,6 +76,7 @@ export default function DashboardPlayerCard({
   const handleSave = async () => {
     setSaving(true)
     setError(null)
+    const isUpdate = Boolean(player?._id)
     try {
       const nationalityRaw = form.nationality.trim()
       const nationalityCode = toNationalityCode(nationalityRaw)
@@ -88,13 +89,15 @@ export default function DashboardPlayerCard({
         retired: form.retired,
       }
 
-      const isUpdate = Boolean(player?._id)
       const res = await apiFetch(isUpdate ? `/api/players/${player?._id}` : '/api/players', {
         method: isUpdate ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      if (!res.ok) throw new Error('Failed to save profile')
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({} as { error?: string }))
+        throw new Error(errBody.error || 'Failed to save profile')
+      }
       setEditing(false)
       onRefresh()
     } catch (e) {
@@ -301,7 +304,12 @@ export default function DashboardPlayerCard({
                 <button type="button" className="dash-player-edit-btn" onClick={() => setEditing(false)} disabled={saving}>
                   Cancel
                 </button>
-                <button type="button" className="dash-player-edit-btn dash-player-edit-btn--primary" onClick={handleSave} disabled={saving}>
+                <button
+                  type="button"
+                  className="dash-player-edit-btn dash-player-edit-btn--primary"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
                   {saving ? 'Saving...' : 'Save'}
                 </button>
               </div>

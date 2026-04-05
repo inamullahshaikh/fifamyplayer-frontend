@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import {
   Area,
   AreaChart,
@@ -17,10 +17,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { COMPETITION_LABELS, TEAM_LABELS } from "../../config/seasonDataConfig";
+import { TEAM_LABELS, labelForCompetitionOrTrophyId } from "../../config/seasonDataConfig";
 import type { StatsApiState } from "../../hooks/useStatsApi";
 import {
-  awardsAggregated,
   buildSeasonClubIntSplit,
   clubCompetitionAgg,
   clubOnlySeasonSeries,
@@ -46,11 +45,22 @@ const PIE_PALETTE = [
   "#64748b",
 ];
 
+/** Consistent motion across Stats charts (Recharts). */
+const CHART_ANIM = { isAnimationActive: true as const, animationDuration: 720 };
+
+const TOOLTIP_CURSOR_BAR = { fill: "rgba(99, 102, 241, 0.07)" };
+const TOOLTIP_CURSOR_AREA = { stroke: "rgba(99, 102, 241, 0.35)", strokeWidth: 1, strokeDasharray: "4 4" };
+
+function fmtTooltipNumber(n: unknown): string {
+  const v = Number(n);
+  return Number.isFinite(v) ? v.toLocaleString() : String(n ?? "—");
+}
+
 type Theme = ReturnType<typeof import("../../hooks/useChartTheme").useChartTheme>;
 
 function compLabel(id: string) {
   if (id === "__other__") return "Other";
-  return COMPETITION_LABELS[id] ?? id;
+  return labelForCompetitionOrTrophyId(id);
 }
 
 function ChartPanel({
@@ -90,6 +100,7 @@ export function StatsOverviewCharts({
   theme: Theme;
   tooltipStyle: React.CSSProperties;
 }) {
+  const gradId = useId().replace(/:/g, "");
   const splitSeason = useMemo(() => buildSeasonClubIntSplit(api.clubData, api.intData), [api.clubData, api.intData]);
   const bySeasonDerived = useMemo(
     () =>
@@ -133,7 +144,10 @@ export function StatsOverviewCharts({
     ];
   }, [api.club.apps, api.international.apps]);
 
-  const awardsBars = useMemo(() => awardsAggregated(api.awardsRows, 10), [api.awardsRows]);
+  const overviewYearData = useMemo(
+    () => api.byYear.map((y) => ({ ...y, ga: y.goals + y.assists })),
+    [api.byYear],
+  );
 
   return (
     <>
@@ -149,8 +163,8 @@ export function StatsOverviewCharts({
             insight="Percentage of career goals from club football vs national team."
             tall
           >
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart margin={{ bottom: 4 }}>
                 <Pie
                   data={pieGoals}
                   dataKey="value"
@@ -159,16 +173,26 @@ export function StatsOverviewCharts({
                   cy="50%"
                   innerRadius={68}
                   outerRadius={100}
-                  paddingAngle={2}
+                  paddingAngle={2.5}
+                  {...CHART_ANIM}
                   label={({ name, percent }) =>
                     `${name ?? ""} ${((percent ?? 0) * 100).toFixed(0)}%`
                   }
                 >
-                  {pieGoals.map((_, i) => (
-                    <Cell key={i} fill={i === 0 ? CLUB : INT} />
+                  {pieGoals.map((row) => (
+                    <Cell
+                      key={row.name}
+                      fill={row.name === "Club" ? CLUB : INT}
+                      stroke="var(--card-bg, #fff)"
+                      strokeWidth={1}
+                    />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  formatter={(value) => [fmtTooltipNumber(value), "Goals"]}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} verticalAlign="bottom" height={28} />
               </PieChart>
             </ResponsiveContainer>
           </ChartPanel>
@@ -180,8 +204,8 @@ export function StatsOverviewCharts({
             insight="Total goal involvements — highlights playmaking load at club vs country."
             tall
           >
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart margin={{ bottom: 4 }}>
                 <Pie
                   data={pieGa}
                   dataKey="value"
@@ -190,16 +214,26 @@ export function StatsOverviewCharts({
                   cy="50%"
                   innerRadius={68}
                   outerRadius={100}
-                  paddingAngle={2}
+                  paddingAngle={2.5}
+                  {...CHART_ANIM}
                   label={({ name, percent }) =>
                     `${String(name ?? "").split(" ")[0]} ${((percent ?? 0) * 100).toFixed(0)}%`
                   }
                 >
-                  {pieGa.map((_, i) => (
-                    <Cell key={i} fill={i === 0 ? GOALS : ASSISTS} />
+                  {pieGa.map((row) => (
+                    <Cell
+                      key={row.name}
+                      fill={row.name.startsWith("Club") ? GOALS : ASSISTS}
+                      stroke="var(--card-bg, #fff)"
+                      strokeWidth={1}
+                    />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  formatter={(value) => [fmtTooltipNumber(value), "G+A"]}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} verticalAlign="bottom" height={28} />
               </PieChart>
             </ResponsiveContainer>
           </ChartPanel>
@@ -211,8 +245,8 @@ export function StatsOverviewCharts({
             insight="Volume of minutes tracked — club workload vs international windows."
             tall
           >
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart margin={{ bottom: 4 }}>
                 <Pie
                   data={pieApps}
                   dataKey="value"
@@ -221,16 +255,26 @@ export function StatsOverviewCharts({
                   cy="50%"
                   innerRadius={68}
                   outerRadius={100}
-                  paddingAngle={2}
+                  paddingAngle={2.5}
+                  {...CHART_ANIM}
                   label={({ name, percent }) =>
                     `${String(name ?? "").split(" ")[0]} ${((percent ?? 0) * 100).toFixed(0)}%`
                   }
                 >
-                  {pieApps.map((_, i) => (
-                    <Cell key={i} fill={i === 0 ? "#8b5cf6" : "#06b6d4"} />
+                  {pieApps.map((row) => (
+                    <Cell
+                      key={row.name}
+                      fill={row.name.startsWith("Club") ? "#8b5cf6" : "#06b6d4"}
+                      stroke="var(--card-bg, #fff)"
+                      strokeWidth={1}
+                    />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  formatter={(value) => [fmtTooltipNumber(value), "Apps"]}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} verticalAlign="bottom" height={28} />
               </PieChart>
             </ResponsiveContainer>
           </ChartPanel>
@@ -243,14 +287,47 @@ export function StatsOverviewCharts({
           insight="Stacked view shows which seasons were driven by club form vs national-team tournaments."
         >
           <ResponsiveContainer width="100%" height={320}>
-            <AreaChart data={splitSeason} margin={{ top: 12, right: 16, left: -8, bottom: 4 }}>
+            <AreaChart data={splitSeason} margin={{ top: 12, right: 16, left: 4, bottom: 6 }}>
+              <defs>
+                <linearGradient id={`${gradId}-split-club`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={CLUB} stopOpacity={0.95} />
+                  <stop offset="100%" stopColor={CLUB} stopOpacity={0.2} />
+                </linearGradient>
+                <linearGradient id={`${gradId}-split-int`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={INT} stopOpacity={0.95} />
+                  <stop offset="100%" stopColor={INT} stopOpacity={0.2} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
               <XAxis dataKey="season" tick={{ fill: theme.axis, fontSize: 10 }} tickLine={false} axisLine={{ stroke: theme.grid }} />
               <YAxis tick={{ fill: theme.axis, fontSize: 11 }} tickLine={false} axisLine={{ stroke: theme.grid }} allowDecimals={false} />
-              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: theme.axis }} />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                labelStyle={{ color: theme.axis }}
+                cursor={TOOLTIP_CURSOR_AREA}
+                formatter={(value) => fmtTooltipNumber(value)}
+              />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Area type="monotone" dataKey="clubGa" name="Club G+A" stackId="1" stroke={CLUB} fill={CLUB} fillOpacity={0.85} />
-              <Area type="monotone" dataKey="intGa" name="International G+A" stackId="1" stroke={INT} fill={INT} fillOpacity={0.85} />
+              <Area
+                type="monotone"
+                dataKey="clubGa"
+                name="Club G+A"
+                stackId="1"
+                stroke={CLUB}
+                strokeWidth={2}
+                fill={`url(#${gradId}-split-club)`}
+                {...CHART_ANIM}
+              />
+              <Area
+                type="monotone"
+                dataKey="intGa"
+                name="International G+A"
+                stackId="1"
+                stroke={INT}
+                strokeWidth={2}
+                fill={`url(#${gradId}-split-int)`}
+                {...CHART_ANIM}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -263,12 +340,23 @@ export function StatsOverviewCharts({
             insight="Higher bars = more involvements per game that season (sample-size aware)."
           >
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={bySeasonDerived} margin={{ top: 12, right: 12, left: -8, bottom: 4 }}>
+              <BarChart data={bySeasonDerived} margin={{ top: 12, right: 12, left: 4, bottom: 6 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
                 <XAxis dataKey="season" tick={{ fill: theme.axis, fontSize: 10 }} tickLine={false} axisLine={{ stroke: theme.grid }} />
                 <YAxis tick={{ fill: theme.axis, fontSize: 11 }} tickLine={false} axisLine={{ stroke: theme.grid }} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="gaPerApp" name="G+A per app" fill={GA} radius={[6, 6, 0, 0]} maxBarSize={36} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={TOOLTIP_CURSOR_BAR}
+                  formatter={(value) => [fmtTooltipNumber(value), "G+A / app"]}
+                />
+                <Bar
+                  dataKey="gaPerApp"
+                  name="G+A per app"
+                  fill={GA}
+                  radius={[8, 8, 2, 2]}
+                  maxBarSize={36}
+                  {...CHART_ANIM}
+                />
               </BarChart>
             </ResponsiveContainer>
           </ChartPanel>
@@ -278,60 +366,68 @@ export function StatsOverviewCharts({
             insight="Side-by-side bars show scoring vs creation balance each year."
           >
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={bySeasonDerived} margin={{ top: 12, right: 12, left: -8, bottom: 4 }}>
+              <BarChart data={bySeasonDerived} margin={{ top: 12, right: 12, left: 4, bottom: 6 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
                 <XAxis dataKey="season" tick={{ fill: theme.axis, fontSize: 10 }} tickLine={false} axisLine={{ stroke: theme.grid }} />
                 <YAxis tick={{ fill: theme.axis, fontSize: 11 }} tickLine={false} axisLine={{ stroke: theme.grid }} allowDecimals={false} />
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={TOOLTIP_CURSOR_BAR}
+                  formatter={(value) => fmtTooltipNumber(value)}
+                />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="goals" name="Goals" fill={GOALS} radius={[4, 4, 0, 0]} maxBarSize={28} />
-                <Bar dataKey="assists" name="Assists" fill={ASSISTS} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                <Bar dataKey="goals" name="Goals" fill={GOALS} radius={[6, 6, 0, 0]} maxBarSize={28} {...CHART_ANIM} />
+                <Bar dataKey="assists" name="Assists" fill={ASSISTS} radius={[6, 6, 0, 0]} maxBarSize={28} {...CHART_ANIM} />
               </BarChart>
             </ResponsiveContainer>
           </ChartPanel>
         </Grid>
       )}
 
-      {awardsBars.length > 0 && (
-        <ChartPanel
-          title="Awards distribution"
-          insight="How many entries you logged per award type (quantity summed)."
-        >
-          <ResponsiveContainer width="100%" height={Math.min(420, 40 + awardsBars.length * 36)}>
-            <BarChart layout="vertical" data={awardsBars} margin={{ top: 8, right: 24, left: 8, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} horizontal={true} vertical={false} />
-              <XAxis type="number" tick={{ fill: theme.axis, fontSize: 11 }} allowDecimals={false} />
-              <YAxis
-                type="category"
-                dataKey="name"
-                width={140}
-                tick={{ fill: theme.axis, fontSize: 10 }}
-                tickFormatter={(v) => (String(v).length > 22 ? `${String(v).slice(0, 20)}…` : v)}
-              />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="count" name="Count" fill={RATING} radius={[0, 6, 6, 0]} maxBarSize={22} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartPanel>
-      )}
-
-      {api.byYear.length > 0 && (
+      {overviewYearData.length > 0 && (
         <ChartPanel
           title="Calendar-year trajectory (overview)"
           insight="Same yearly series as the By year tab — quick view of long-term trend."
         >
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart
-              data={api.byYear.map((y) => ({ ...y, ga: y.goals + y.assists }))}
-              margin={{ top: 12, right: 12, left: -8, bottom: 4 }}
-            >
+            <AreaChart data={overviewYearData} margin={{ top: 12, right: 12, left: 4, bottom: 6 }}>
+              <defs>
+                <linearGradient id={`${gradId}-oy-goals`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={GOALS} stopOpacity={0.45} />
+                  <stop offset="100%" stopColor={GOALS} stopOpacity={0.04} />
+                </linearGradient>
+                <linearGradient id={`${gradId}-oy-assists`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={ASSISTS} stopOpacity={0.45} />
+                  <stop offset="100%" stopColor={ASSISTS} stopOpacity={0.04} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
               <XAxis dataKey="year" tick={{ fill: theme.axis, fontSize: 11 }} tickLine={false} axisLine={{ stroke: theme.grid }} />
               <YAxis tick={{ fill: theme.axis, fontSize: 11 }} tickLine={false} axisLine={{ stroke: theme.grid }} allowDecimals={false} />
-              <Tooltip contentStyle={tooltipStyle} />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                cursor={TOOLTIP_CURSOR_AREA}
+                formatter={(value) => fmtTooltipNumber(value)}
+              />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Area type="monotone" dataKey="goals" name="Goals" stroke={GOALS} fill={GOALS} fillOpacity={0.25} />
-              <Area type="monotone" dataKey="assists" name="Assists" stroke={ASSISTS} fill={ASSISTS} fillOpacity={0.25} />
+              <Area
+                type="monotone"
+                dataKey="goals"
+                name="Goals"
+                stroke={GOALS}
+                strokeWidth={2}
+                fill={`url(#${gradId}-oy-goals)`}
+                {...CHART_ANIM}
+              />
+              <Area
+                type="monotone"
+                dataKey="assists"
+                name="Assists"
+                stroke={ASSISTS}
+                strokeWidth={2}
+                fill={`url(#${gradId}-oy-assists)`}
+                {...CHART_ANIM}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -361,9 +457,11 @@ export function StatsClubCharts({
       m.set(id, (m.get(id) ?? 0) + 1);
     }
     return [...m.entries()]
-      .map(([id, count]) => ({ id, name: COMPETITION_LABELS[id] ?? id, count }))
+      .map(([id, count]) => ({ id, name: compLabel(id), count }))
       .sort((a, b) => b.count - a.count);
   }, [api.clubTrophies]);
+
+  const compBarsSlice = useMemo(() => compBars.slice(0, 14), [compBars]);
 
   if (compBars.length === 0 && seasonClub.length === 0 && trophyBars.length === 0) return null;
 
@@ -377,8 +475,8 @@ export function StatsClubCharts({
             insight="Where club career G+A is concentrated — leagues vs cups vs Europe."
             tall
           >
-            <ResponsiveContainer width="100%" height={Math.min(480, 48 + compBars.length * 32)}>
-              <BarChart layout="vertical" data={compBars.slice(0, 14)} margin={{ top: 8, right: 20, left: 4, bottom: 8 }}>
+            <ResponsiveContainer width="100%" height={Math.min(480, 48 + compBarsSlice.length * 32)}>
+              <BarChart layout="vertical" data={compBarsSlice} margin={{ top: 8, right: 20, left: 4, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} horizontal={true} vertical={false} />
                 <XAxis type="number" tick={{ fill: theme.axis, fontSize: 11 }} allowDecimals={false} />
                 <YAxis
@@ -388,10 +486,22 @@ export function StatsClubCharts({
                   tick={{ fill: theme.axis, fontSize: 10 }}
                   tickFormatter={(id) => compLabel(String(id))}
                 />
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={{ fill: "rgba(37, 99, 235, 0.06)" }}
+                  formatter={(value) => fmtTooltipNumber(value)}
+                />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="goals" name="Goals" stackId="a" fill={GOALS} radius={[0, 0, 0, 0]} />
-                <Bar dataKey="assists" name="Assists" stackId="a" fill={ASSISTS} radius={[0, 6, 6, 0]} />
+                <Bar dataKey="goals" name="Goals" stackId="a" fill={GOALS} radius={[0, 0, 0, 0]} {...CHART_ANIM}>
+                  {compBarsSlice.map((row) => (
+                    <Cell key={row.id} fill={GOALS} />
+                  ))}
+                </Bar>
+                <Bar dataKey="assists" name="Assists" stackId="a" fill={ASSISTS} radius={[0, 6, 6, 0]} {...CHART_ANIM}>
+                  {compBarsSlice.map((row) => (
+                    <Cell key={`${row.id}-a`} fill={ASSISTS} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </ChartPanel>
@@ -400,14 +510,32 @@ export function StatsClubCharts({
         {seasonClub.length > 0 && (
           <ChartPanel title="Club-only season trend" insight="Goals and assists per season from season data (club rows only).">
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={seasonClub} margin={{ top: 12, right: 12, left: -8, bottom: 4 }}>
+              <LineChart data={seasonClub} margin={{ top: 12, right: 12, left: 4, bottom: 6 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
                 <XAxis dataKey="season" tick={{ fill: theme.axis, fontSize: 10 }} tickLine={false} axisLine={{ stroke: theme.grid }} />
                 <YAxis tick={{ fill: theme.axis, fontSize: 11 }} tickLine={false} axisLine={{ stroke: theme.grid }} allowDecimals={false} />
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value) => fmtTooltipNumber(value)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="goals" name="Goals" stroke={GOALS} strokeWidth={2.5} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="assists" name="Assists" stroke={ASSISTS} strokeWidth={2.5} dot={{ r: 3 }} />
+                <Line
+                  type="monotone"
+                  dataKey="goals"
+                  name="Goals"
+                  stroke={GOALS}
+                  strokeWidth={2.5}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5, strokeWidth: 0 }}
+                  {...CHART_ANIM}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="assists"
+                  name="Assists"
+                  stroke={ASSISTS}
+                  strokeWidth={2.5}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5, strokeWidth: 0 }}
+                  {...CHART_ANIM}
+                />
               </LineChart>
             </ResponsiveContainer>
           </ChartPanel>
@@ -415,14 +543,22 @@ export function StatsClubCharts({
       </Grid>
 
       {trophyBars.length > 0 && (
-        <ChartPanel title="Trophy wins by competition" insight="Count of trophy rows in your cabinet (one per season won).">
+        <ChartPanel title="Trophy wins by title" insight="Count of trophy rows in your cabinet (one per season won).">
           <ResponsiveContainer width="100%" height={Math.min(400, 40 + trophyBars.length * 40)}>
-            <BarChart data={trophyBars} margin={{ top: 12, right: 12, left: -8, bottom: 48 }}>
+            <BarChart data={trophyBars} margin={{ top: 12, right: 12, left: 4, bottom: 48 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
               <XAxis dataKey="name" tick={{ fill: theme.axis, fontSize: 9 }} angle={-28} textAnchor="end" height={70} interval={0} />
               <YAxis tick={{ fill: theme.axis, fontSize: 11 }} allowDecimals={false} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="count" name="Wins" fill={CLUB} radius={[6, 6, 0, 0]} maxBarSize={48} />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                cursor={TOOLTIP_CURSOR_BAR}
+                formatter={(value) => [fmtTooltipNumber(value), "Wins"]}
+              />
+              <Bar dataKey="count" name="Wins" radius={[8, 8, 0, 0]} maxBarSize={48} {...CHART_ANIM}>
+                {trophyBars.map((row, i) => (
+                  <Cell key={row.id} fill={PIE_PALETTE[i % PIE_PALETTE.length]} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -442,7 +578,7 @@ export function StatsInternationalCharts({
   theme: Theme;
   tooltipStyle: React.CSSProperties;
 }) {
-  const compBars = useMemo(() => intCompetitionAgg(api.intData), [api.intData]);
+  const intCompSlice = useMemo(() => intCompetitionAgg(api.intData), [api.intData]);
   const seasonInt = useMemo(() => intOnlySeasonSeries(api.intData), [api.intData]);
   const trophyBars = useMemo(() => {
     const m = new Map<string, number>();
@@ -452,24 +588,24 @@ export function StatsInternationalCharts({
       m.set(id, (m.get(id) ?? 0) + 1);
     }
     return [...m.entries()]
-      .map(([id, count]) => ({ id, name: COMPETITION_LABELS[id] ?? id, count }))
+      .map(([id, count]) => ({ id, name: compLabel(id), count }))
       .sort((a, b) => b.count - a.count);
   }, [api.intTrophies]);
 
-  if (compBars.length === 0 && seasonInt.length === 0 && trophyBars.length === 0) return null;
+  if (intCompSlice.length === 0 && seasonInt.length === 0 && trophyBars.length === 0) return null;
 
   return (
     <>
       <h2 className="stats-analytics-section-title">International analytics</h2>
       <Grid>
-        {compBars.length > 0 && (
+        {intCompSlice.length > 0 && (
           <ChartPanel
             title="National team by competition"
             insight="Breakdown of caps output across WC, qualifiers, friendlies, etc."
             tall
           >
-            <ResponsiveContainer width="100%" height={Math.min(420, 48 + compBars.length * 36)}>
-              <BarChart layout="vertical" data={compBars} margin={{ top: 8, right: 20, left: 4, bottom: 8 }}>
+            <ResponsiveContainer width="100%" height={Math.min(420, 48 + intCompSlice.length * 36)}>
+              <BarChart layout="vertical" data={intCompSlice} margin={{ top: 8, right: 20, left: 4, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} horizontal={true} vertical={false} />
                 <XAxis type="number" tick={{ fill: theme.axis, fontSize: 11 }} allowDecimals={false} />
                 <YAxis
@@ -479,10 +615,18 @@ export function StatsInternationalCharts({
                   tick={{ fill: theme.axis, fontSize: 10 }}
                   tickFormatter={(id) => compLabel(String(id))}
                 />
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value) => fmtTooltipNumber(value)} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="goals" name="Goals" stackId="a" fill={GOALS} />
-                <Bar dataKey="assists" name="Assists" stackId="a" fill={ASSISTS} />
+                <Bar dataKey="goals" name="Goals" stackId="a" fill={GOALS} radius={[0, 0, 0, 0]} {...CHART_ANIM}>
+                  {intCompSlice.map((row) => (
+                    <Cell key={row.id} fill={GOALS} />
+                  ))}
+                </Bar>
+                <Bar dataKey="assists" name="Assists" stackId="a" fill={ASSISTS} radius={[0, 6, 6, 0]} {...CHART_ANIM}>
+                  {intCompSlice.map((row) => (
+                    <Cell key={`${row.id}-a`} fill={ASSISTS} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </ChartPanel>
@@ -491,14 +635,28 @@ export function StatsInternationalCharts({
         {seasonInt.length > 0 && (
           <ChartPanel title="International season trend" insight="Year-to-year national-team production.">
             <ResponsiveContainer width="100%" height={300}>
-              <ComposedChart data={seasonInt} margin={{ top: 12, right: 12, left: -8, bottom: 4 }}>
+              <ComposedChart data={seasonInt} margin={{ top: 12, right: 12, left: 4, bottom: 6 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
                 <XAxis dataKey="season" tick={{ fill: theme.axis, fontSize: 10 }} tickLine={false} axisLine={{ stroke: theme.grid }} />
                 <YAxis yAxisId="left" tick={{ fill: theme.axis, fontSize: 11 }} tickLine={false} allowDecimals={false} />
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value) => fmtTooltipNumber(value)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar yAxisId="left" dataKey="ga" name="G+A" fill={INT} radius={[4, 4, 0, 0]} maxBarSize={32} />
-                <Line yAxisId="left" type="monotone" dataKey="apps" name="Apps" stroke={RATING} strokeWidth={2} dot={{ r: 2 }} />
+                <Bar yAxisId="left" dataKey="ga" name="G+A" fill={INT} radius={[6, 6, 0, 0]} maxBarSize={32} {...CHART_ANIM}>
+                  {seasonInt.map((row) => (
+                    <Cell key={row.season} fill={INT} />
+                  ))}
+                </Bar>
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="apps"
+                  name="Apps"
+                  stroke={RATING}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5, strokeWidth: 0 }}
+                  {...CHART_ANIM}
+                />
               </ComposedChart>
             </ResponsiveContainer>
           </ChartPanel>
@@ -512,8 +670,12 @@ export function StatsInternationalCharts({
               <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} horizontal={true} vertical={false} />
               <XAxis type="number" tick={{ fill: theme.axis, fontSize: 11 }} allowDecimals={false} />
               <YAxis type="category" dataKey="name" width={130} tick={{ fill: theme.axis, fontSize: 10 }} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="count" fill={INT} radius={[0, 6, 6, 0]} maxBarSize={24} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(value) => [fmtTooltipNumber(value), "Wins"]} />
+              <Bar dataKey="count" radius={[0, 8, 8, 0]} maxBarSize={26} {...CHART_ANIM}>
+                {trophyBars.map((row, i) => (
+                  <Cell key={row.id} fill={PIE_PALETTE[(i + 3) % PIE_PALETTE.length]} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -528,21 +690,31 @@ export function StatsBySeasonExtraCharts({
   api,
   theme,
   tooltipStyle,
+  bySeasonForCharts,
 }: {
   api: StatsApiState;
   theme: Theme;
   tooltipStyle: React.CSSProperties;
+  /** Subset of seasons for charts (e.g. stats page search). Defaults to full career. */
+  bySeasonForCharts?: StatsApiState["bySeason"];
 }) {
+  const seasonRows = bySeasonForCharts ?? api.bySeason;
+
   const composed = useMemo(
     () =>
-      api.bySeason.map((s) => ({
+      seasonRows.map((s) => ({
         ...s,
         ga: s.goals + s.assists,
       })),
-    [api.bySeason],
+    [seasonRows],
   );
 
-  const split = useMemo(() => buildSeasonClubIntSplit(api.clubData, api.intData), [api.clubData, api.intData]);
+  const split = useMemo(() => {
+    const full = buildSeasonClubIntSplit(api.clubData, api.intData);
+    if (!bySeasonForCharts) return full;
+    const allow = new Set(bySeasonForCharts.map((s) => s.season));
+    return full.filter((r) => allow.has(r.season));
+  }, [api.clubData, api.intData, bySeasonForCharts]);
 
   if (composed.length === 0) return null;
 
@@ -555,14 +727,18 @@ export function StatsBySeasonExtraCharts({
           insight="Bars = involvements; line = mean match rating that season (when logged)."
         >
           <ResponsiveContainer width="100%" height={320}>
-            <ComposedChart data={composed} margin={{ top: 12, right: 16, left: -8, bottom: 4 }}>
+            <ComposedChart data={composed} margin={{ top: 12, right: 16, left: 4, bottom: 6 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
               <XAxis dataKey="season" tick={{ fill: theme.axis, fontSize: 10 }} tickLine={false} axisLine={{ stroke: theme.grid }} />
               <YAxis yAxisId="g" tick={{ fill: theme.axis, fontSize: 11 }} allowDecimals={false} />
               <YAxis yAxisId="r" orientation="right" domain={[6, 10]} tick={{ fill: theme.axis, fontSize: 11 }} />
-              <Tooltip contentStyle={tooltipStyle} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(value) => fmtTooltipNumber(value)} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar yAxisId="g" dataKey="ga" name="G+A" fill={GA} radius={[6, 6, 0, 0]} maxBarSize={36} />
+              <Bar yAxisId="g" dataKey="ga" name="G+A" radius={[8, 8, 2, 2]} maxBarSize={36} {...CHART_ANIM}>
+                {composed.map((row) => (
+                  <Cell key={row.season} fill={GA} />
+                ))}
+              </Bar>
               <Line
                 yAxisId="r"
                 type="monotone"
@@ -571,7 +747,9 @@ export function StatsBySeasonExtraCharts({
                 stroke={RATING}
                 strokeWidth={2}
                 dot={{ r: 3 }}
+                activeDot={{ r: 5, strokeWidth: 0 }}
                 connectNulls
+                {...CHART_ANIM}
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -582,12 +760,16 @@ export function StatsBySeasonExtraCharts({
           insight="Workload trend — club + international apps combined."
         >
           <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={composed} margin={{ top: 12, right: 12, left: -8, bottom: 4 }}>
+            <BarChart data={composed} margin={{ top: 12, right: 12, left: 4, bottom: 6 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
               <XAxis dataKey="season" tick={{ fill: theme.axis, fontSize: 10 }} tickLine={false} axisLine={{ stroke: theme.grid }} />
               <YAxis tick={{ fill: theme.axis, fontSize: 11 }} allowDecimals={false} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="apps" name="Apps" fill="#64748b" radius={[6, 6, 0, 0]} maxBarSize={40} />
+              <Tooltip contentStyle={tooltipStyle} cursor={TOOLTIP_CURSOR_BAR} formatter={(value) => fmtTooltipNumber(value)} />
+              <Bar dataKey="apps" name="Apps" radius={[8, 8, 2, 2]} maxBarSize={40} {...CHART_ANIM}>
+                {composed.map((row, i) => (
+                  <Cell key={row.season} fill={PIE_PALETTE[i % PIE_PALETTE.length]} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -599,14 +781,22 @@ export function StatsBySeasonExtraCharts({
           insight="Compare scoring output at club vs country each season."
         >
           <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={split} margin={{ top: 12, right: 12, left: -8, bottom: 4 }}>
+            <BarChart data={split} margin={{ top: 12, right: 12, left: 4, bottom: 6 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
               <XAxis dataKey="season" tick={{ fill: theme.axis, fontSize: 10 }} tickLine={false} axisLine={{ stroke: theme.grid }} />
               <YAxis tick={{ fill: theme.axis, fontSize: 11 }} allowDecimals={false} />
-              <Tooltip contentStyle={tooltipStyle} />
+              <Tooltip contentStyle={tooltipStyle} cursor={TOOLTIP_CURSOR_BAR} formatter={(value) => fmtTooltipNumber(value)} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="clubGoals" name="Club goals" stackId="g" fill={CLUB} />
-              <Bar dataKey="intGoals" name="Int. goals" stackId="g" fill={INT} />
+              <Bar dataKey="clubGoals" name="Club goals" stackId="g" fill={CLUB} radius={[0, 0, 0, 0]} {...CHART_ANIM}>
+                {split.map((row) => (
+                  <Cell key={`${row.season}-club`} fill={CLUB} />
+                ))}
+              </Bar>
+              <Bar dataKey="intGoals" name="Int. goals" stackId="g" fill={INT} radius={[6, 6, 0, 0]} {...CHART_ANIM}>
+                {split.map((row) => (
+                  <Cell key={`${row.season}-int`} fill={INT} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -626,6 +816,7 @@ export function StatsByYearExtraCharts({
   theme: Theme;
   tooltipStyle: React.CSSProperties;
 }) {
+  const yearGradId = useId().replace(/:/g, "");
   const data = useMemo(
     () => api.byYear.map((y) => ({ ...y, ga: y.goals + y.assists })),
     [api.byYear],
@@ -641,26 +832,50 @@ export function StatsByYearExtraCharts({
           insight="How each year splits between goals and assists."
         >
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data} margin={{ top: 12, right: 12, left: -8, bottom: 4 }}>
+            <BarChart data={data} margin={{ top: 12, right: 12, left: 4, bottom: 6 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
               <XAxis dataKey="year" tick={{ fill: theme.axis, fontSize: 11 }} tickLine={false} axisLine={{ stroke: theme.grid }} />
               <YAxis tick={{ fill: theme.axis, fontSize: 11 }} allowDecimals={false} />
-              <Tooltip contentStyle={tooltipStyle} />
+              <Tooltip contentStyle={tooltipStyle} cursor={TOOLTIP_CURSOR_BAR} formatter={(value) => fmtTooltipNumber(value)} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="goals" name="Goals" stackId="x" fill={GOALS} />
-              <Bar dataKey="assists" name="Assists" stackId="x" fill={ASSISTS} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="goals" name="Goals" stackId="x" fill={GOALS} {...CHART_ANIM}>
+                {data.map((row) => (
+                  <Cell key={`${row.year}-g`} fill={GOALS} />
+                ))}
+              </Bar>
+              <Bar dataKey="assists" name="Assists" stackId="x" fill={ASSISTS} radius={[6, 6, 0, 0]} {...CHART_ANIM}>
+                {data.map((row) => (
+                  <Cell key={`${row.year}-a`} fill={ASSISTS} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>
 
         <ChartPanel title="Total involvements trend" insight="Single metric peak years for G+A combined.">
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={data} margin={{ top: 12, right: 12, left: -8, bottom: 4 }}>
+            <AreaChart data={data} margin={{ top: 12, right: 12, left: 4, bottom: 6 }}>
+              <defs>
+                <linearGradient id={`${yearGradId}-ga-trend`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={GA} stopOpacity={0.5} />
+                  <stop offset="100%" stopColor={GA} stopOpacity={0.04} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
               <XAxis dataKey="year" tick={{ fill: theme.axis, fontSize: 11 }} tickLine={false} axisLine={{ stroke: theme.grid }} />
               <YAxis tick={{ fill: theme.axis, fontSize: 11 }} allowDecimals={false} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Area type="monotone" dataKey="ga" name="G+A" stroke={GA} fill={GA} fillOpacity={0.35} />
+              <Tooltip contentStyle={tooltipStyle} cursor={TOOLTIP_CURSOR_AREA} formatter={(value) => fmtTooltipNumber(value)} />
+              <Area
+                type="monotone"
+                dataKey="ga"
+                name="G+A"
+                stroke={GA}
+                strokeWidth={2.5}
+                fill={`url(#${yearGradId}-ga-trend)`}
+                dot={{ r: 3, fill: GA, strokeWidth: 0 }}
+                activeDot={{ r: 5, strokeWidth: 0 }}
+                {...CHART_ANIM}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -681,20 +896,22 @@ export function StatsBestCharts({
   tooltipStyle: React.CSSProperties;
 }) {
   const barData = useMemo(() => {
-    const rows: { label: string; value: number; fill: string }[] = [];
+    const rows: { key: string; label: string; value: number; fill: string }[] = [];
     const b = api.best;
-    if (b.bestSeasonGoals) rows.push({ label: "Best season (G)", value: b.bestSeasonGoals.goals, fill: GOALS });
-    if (b.bestSeasonAssists) rows.push({ label: "Best season (A)", value: b.bestSeasonAssists.assists, fill: ASSISTS });
+    if (b.bestSeasonGoals) rows.push({ key: "bs-g", label: "Best season (G)", value: b.bestSeasonGoals.goals, fill: GOALS });
+    if (b.bestSeasonAssists) rows.push({ key: "bs-a", label: "Best season (A)", value: b.bestSeasonAssists.assists, fill: ASSISTS });
     if (b.bestSeasonTotal)
       rows.push({
+        key: "bs-ga",
         label: "Best season (G+A)",
         value: b.bestSeasonTotal.goals + b.bestSeasonTotal.assists,
         fill: GA,
       });
-    if (b.bestYearGoals) rows.push({ label: "Best year (G)", value: b.bestYearGoals.goals, fill: GOALS });
-    if (b.bestYearAssists) rows.push({ label: "Best year (A)", value: b.bestYearAssists.assists, fill: ASSISTS });
+    if (b.bestYearGoals) rows.push({ key: "by-g", label: "Best year (G)", value: b.bestYearGoals.goals, fill: GOALS });
+    if (b.bestYearAssists) rows.push({ key: "by-a", label: "Best year (A)", value: b.bestYearAssists.assists, fill: ASSISTS });
     if (b.bestYearTotal)
       rows.push({
+        key: "by-ga",
         label: "Best year (G+A)",
         value: b.bestYearTotal.goals + b.bestYearTotal.assists,
         fill: GA,
@@ -716,10 +933,10 @@ export function StatsBestCharts({
             <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} horizontal={true} vertical={false} />
             <XAxis type="number" tick={{ fill: theme.axis, fontSize: 11 }} allowDecimals={false} />
             <YAxis type="category" dataKey="label" width={150} tick={{ fill: theme.axis, fontSize: 10 }} />
-            <Tooltip contentStyle={tooltipStyle} />
-            <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={28}>
-              {barData.map((e, i) => (
-                <Cell key={i} fill={e.fill} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(value) => fmtTooltipNumber(value)} />
+            <Bar dataKey="value" radius={[0, 8, 8, 0]} maxBarSize={28} {...CHART_ANIM}>
+              {barData.map((e) => (
+                <Cell key={e.key} fill={e.fill} />
               ))}
             </Bar>
           </BarChart>
@@ -744,7 +961,8 @@ export function StatsCompetitionCharts({
     () =>
       [...api.byCompetition]
         .map((r) => ({
-          name: COMPETITION_LABELS[r.competition] ?? r.competition,
+          compKey: r.competition,
+          name: labelForCompetitionOrTrophyId(r.competition),
           ga: r.goals + r.assists,
           goals: r.goals,
           assists: r.assists,
@@ -760,7 +978,8 @@ export function StatsCompetitionCharts({
     () =>
       api.byCompetition
         .map((r) => ({
-          name: (COMPETITION_LABELS[r.competition] ?? r.competition).slice(0, 18),
+          compKey: r.competition,
+          name: labelForCompetitionOrTrophyId(r.competition).slice(0, 18),
           perApp: r.apps > 0 ? (r.goals + r.assists) / r.apps : 0,
           apps: r.apps,
         }))
@@ -786,8 +1005,12 @@ export function StatsCompetitionCharts({
               <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} horizontal={true} vertical={false} />
               <XAxis type="number" tick={{ fill: theme.axis, fontSize: 11 }} allowDecimals={false} />
               <YAxis type="category" dataKey="name" width={130} tick={{ fill: theme.axis, fontSize: 10 }} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="ga" name="G+A" fill={GA} radius={[0, 6, 6, 0]} maxBarSize={22} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(value) => fmtTooltipNumber(value)} />
+              <Bar dataKey="ga" name="G+A" radius={[0, 8, 8, 0]} maxBarSize={24} {...CHART_ANIM}>
+                {horiz.map((row, i) => (
+                  <Cell key={row.compKey} fill={PIE_PALETTE[i % PIE_PALETTE.length]} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -798,26 +1021,33 @@ export function StatsCompetitionCharts({
             insight="Top competitions vs everything else — concentration of output."
             tall
           >
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
+            <ResponsiveContainer width="100%" height={320}>
+              <PieChart margin={{ bottom: 8 }}>
                 <Pie
                   data={pieSlices.map((s) => ({ ...s, name: compLabel(s.key) }))}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
-                  cy="50%"
-                  innerRadius={56}
-                  outerRadius={88}
-                  paddingAngle={1}
+                  cy="48%"
+                  innerRadius={54}
+                  outerRadius={86}
+                  paddingAngle={2}
+                  {...CHART_ANIM}
                   label={({ name, percent }) =>
                     `${String(name ?? "").split(" ")[0]} ${(((percent ?? 0) as number) * 100).toFixed(0)}%`
                   }
                 >
-                  {pieSlices.map((_, i) => (
-                    <Cell key={i} fill={PIE_PALETTE[i % PIE_PALETTE.length]} />
+                  {pieSlices.map((s, i) => (
+                    <Cell
+                      key={s.key}
+                      fill={PIE_PALETTE[i % PIE_PALETTE.length]}
+                      stroke="var(--card-bg, #fff)"
+                      strokeWidth={1}
+                    />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value) => fmtTooltipNumber(value)} />
+                <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="bottom" height={32} />
               </PieChart>
             </ResponsiveContainer>
           </ChartPanel>
@@ -830,12 +1060,16 @@ export function StatsCompetitionCharts({
           insight="Which competitions you’ve been most productive in per appearance (min. data required)."
         >
           <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={perApp} margin={{ top: 12, right: 12, left: -8, bottom: 56 }}>
+            <BarChart data={perApp} margin={{ top: 12, right: 12, left: 4, bottom: 56 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
               <XAxis dataKey="name" tick={{ fill: theme.axis, fontSize: 9 }} angle={-25} textAnchor="end" height={65} interval={0} />
               <YAxis tick={{ fill: theme.axis, fontSize: 11 }} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="perApp" name="G+A per app" fill={RATING} radius={[6, 6, 0, 0]} maxBarSize={36} />
+              <Tooltip contentStyle={tooltipStyle} cursor={TOOLTIP_CURSOR_BAR} formatter={(value) => [fmtTooltipNumber(value), "G+A / app"]} />
+              <Bar dataKey="perApp" name="G+A per app" radius={[8, 8, 2, 2]} maxBarSize={36} {...CHART_ANIM}>
+                {perApp.map((row, i) => (
+                  <Cell key={row.compKey} fill={PIE_PALETTE[(i + 2) % PIE_PALETTE.length]} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -859,6 +1093,7 @@ export function StatsTeamCharts({
     () =>
       api.byTeam
         .map((t) => ({
+          teamKey: t.team,
           name: (TEAM_LABELS[t.team] ?? t.team).slice(0, 22),
           ga: t.goals + t.assists,
           goals: t.goals,
@@ -881,10 +1116,18 @@ export function StatsTeamCharts({
               <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} horizontal={true} vertical={false} />
               <XAxis type="number" tick={{ fill: theme.axis, fontSize: 11 }} allowDecimals={false} />
               <YAxis type="category" dataKey="name" width={120} tick={{ fill: theme.axis, fontSize: 10 }} />
-              <Tooltip contentStyle={tooltipStyle} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(value) => fmtTooltipNumber(value)} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="goals" name="Goals" stackId="x" fill={GOALS} />
-              <Bar dataKey="assists" name="Assists" stackId="x" fill={ASSISTS} radius={[0, 6, 6, 0]} />
+              <Bar dataKey="goals" name="Goals" stackId="x" fill={GOALS} radius={[0, 0, 0, 0]} {...CHART_ANIM}>
+                {teams.map((row) => (
+                  <Cell key={`${row.teamKey}-g`} fill={GOALS} />
+                ))}
+              </Bar>
+              <Bar dataKey="assists" name="Assists" stackId="x" fill={ASSISTS} radius={[0, 6, 6, 0]} {...CHART_ANIM}>
+                {teams.map((row) => (
+                  <Cell key={`${row.teamKey}-a`} fill={ASSISTS} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -895,8 +1138,12 @@ export function StatsTeamCharts({
               <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} horizontal={true} vertical={false} />
               <XAxis type="number" tick={{ fill: theme.axis, fontSize: 11 }} allowDecimals={false} />
               <YAxis type="category" dataKey="name" width={120} tick={{ fill: theme.axis, fontSize: 10 }} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="apps" name="Apps" fill={CLUB} radius={[0, 6, 6, 0]} maxBarSize={24} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(value) => fmtTooltipNumber(value)} />
+              <Bar dataKey="apps" name="Apps" radius={[0, 8, 8, 0]} maxBarSize={26} {...CHART_ANIM}>
+                {teams.map((row, i) => (
+                  <Cell key={row.teamKey} fill={PIE_PALETTE[i % PIE_PALETTE.length]} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>

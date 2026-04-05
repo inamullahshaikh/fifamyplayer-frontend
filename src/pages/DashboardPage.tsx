@@ -2,9 +2,17 @@ import DashboardAchievements from '../components/dashboard/DashboardAchievements
 import DashboardCharts from '../components/dashboard/DashboardCharts'
 import DashboardPlayerCard from '../components/dashboard/DashboardPlayerCard'
 import DashboardTransferHistory from '../components/dashboard/DashboardTransferHistory'
+import DataCapNotice, { DataCapNoticeGroup } from '../components/DataCapNotice'
 import { useDashboardApi } from '../hooks/useDashboardApi'
+import { useDataEntryStatus } from '../hooks/useDataEntryStatus'
+
 export default function DashboardPage() {
   const api = useDashboardApi()
+  const dataEntry = useDataEntryStatus()
+  const refreshAll = () => {
+    api.refresh()
+    dataEntry.refresh()
+  }
   const totalTrophies = api.clubTrophies + api.intTrophies
 
   return (
@@ -64,13 +72,31 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {(dataEntry.seasonCapReached || dataEntry.yearCapReached) && (
+        <DataCapNoticeGroup>
+          {dataEntry.seasonCapReached && (
+            <DataCapNotice
+              variant="season"
+              title={`Seasons: ${dataEntry.seasonCount}/${dataEntry.maxSeasons}`}
+            >
+              No new season labels; you can still add rows for existing seasons.
+            </DataCapNotice>
+          )}
+          {dataEntry.yearCapReached && (
+            <DataCapNotice variant="year" title={`Years: ${dataEntry.yearCount}/${dataEntry.maxYears}`}>
+              No new calendar years; edit or delete yearly rows to change totals.
+            </DataCapNotice>
+          )}
+        </DataCapNoticeGroup>
+      )}
+
       <DashboardPlayerCard
         player={api.player}
         currentTeamSlug={api.currentTeamSlug}
         prevTeamSlug={api.prevTeamSlug}
         transfers={api.transfers}
         loading={api.loading}
-        onRefresh={api.refresh}
+        onRefresh={refreshAll}
       />
 
       <h2 className="dash-section-title">Performance</h2>
@@ -92,7 +118,9 @@ export default function DashboardPage() {
       <DashboardTransferHistory
         transfers={api.transfers}
         loading={api.loading}
-        onRefresh={api.refresh}
+        onRefresh={refreshAll}
+        seasonCapReached={dataEntry.seasonCapReached}
+        existingSeasons={dataEntry.existingSeasons}
       />
     </section>
   )

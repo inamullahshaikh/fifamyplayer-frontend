@@ -8,6 +8,8 @@ type Props = {
   transfers: TransferRow[]
   loading: boolean
   onRefresh: () => void
+  seasonCapReached?: boolean
+  existingSeasons?: string[]
 }
 
 function TeamInline({ name }: { name: string }) {
@@ -48,7 +50,13 @@ function formatTransferFee(raw: string | undefined): string {
   return `${compact.toUpperCase()} €`
 }
 
-export default function DashboardTransferHistory({ transfers, loading, onRefresh }: Props) {
+export default function DashboardTransferHistory({
+  transfers,
+  loading,
+  onRefresh,
+  seasonCapReached = false,
+  existingSeasons = [],
+}: Props) {
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -57,6 +65,13 @@ export default function DashboardTransferHistory({ transfers, loading, onRefresh
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
+    const s = form.season.trim()
+    if (seasonCapReached && s && !existingSeasons.includes(s)) {
+      setFormError(
+        `You have 15 seasons. Use a season you already logged (e.g. one of your existing saves), or edit/delete data first.`,
+      )
+      return
+    }
     if (!form.season || !form.from || !form.to) {
       setFormError('Season, From, and To are required.')
       return
@@ -69,7 +84,10 @@ export default function DashboardTransferHistory({ transfers, loading, onRefresh
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
-      if (!res.ok) throw new Error('Failed to save transfer')
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({} as { error?: string }))
+        throw new Error(errBody.error || 'Failed to save transfer')
+      }
       setForm(EMPTY_FORM)
       setAdding(false)
       onRefresh()
@@ -106,7 +124,10 @@ export default function DashboardTransferHistory({ transfers, loading, onRefresh
         <button
           type="button"
           className="dash-transfer-add-btn"
-          onClick={() => { setAdding((v) => !v); setFormError(null) }}
+          onClick={() => {
+            setAdding((v) => !v)
+            setFormError(null)
+          }}
         >
           {adding ? '✕ Cancel' : '+ Add Transfer'}
         </button>

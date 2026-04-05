@@ -1,4 +1,10 @@
+import { isManOfTheMatchAward } from '../config/seasonDataConfig'
 import type { AwardRow, IntDataRow, SeasonDataRow } from '../types/dashboard'
+
+/** MOTM is high-volume; omit from award charts so other honours stay readable. */
+function awardRowsExcludingMotm(awards: AwardRow[]): AwardRow[] {
+  return awards.filter((a) => !isManOfTheMatchAward(String(a.award ?? '')))
+}
 
 /** Per season: club vs international split for stacked / comparative charts. */
 export function buildSeasonClubIntSplit(
@@ -93,7 +99,7 @@ export function intCompetitionAgg(int: IntDataRow[]): CompAgg[] {
 
 export function awardsAggregated(awards: AwardRow[], limit = 12): { name: string; count: number }[] {
   const m = new Map<string, number>()
-  for (const a of awards) {
+  for (const a of awardRowsExcludingMotm(awards)) {
     const name = String(a.award ?? '').trim() || '—'
     const q = Number(a.quantity) > 0 ? Number(a.quantity) : 1
     m.set(name, (m.get(name) ?? 0) + q)
@@ -107,7 +113,7 @@ export function awardsAggregated(awards: AwardRow[], limit = 12): { name: string
 /** Total award quantity per season, sorted oldest → newest for time-series charts. */
 export function awardsPerSeasonTotals(awards: AwardRow[]): { season: string; total: number }[] {
   const m = new Map<string, number>()
-  for (const a of awards) {
+  for (const a of awardRowsExcludingMotm(awards)) {
     const season = String(a.season ?? '').trim()
     if (!season) continue
     const name = String(a.award ?? '').trim()
