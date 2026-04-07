@@ -722,7 +722,7 @@ html[data-theme="dark"] .nav-theme {
 
 .dash-career-panel {
   position: absolute;
-  z-index: 200;
+  z-index: 300;
   right: 0;
   top: calc(100% + 8px);
   width: min(calc(100vw - 32px), 320px);
@@ -738,6 +738,13 @@ html[data-theme="dark"] .nav-theme {
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   overflow: hidden;
+}
+
+/* Portaled + fixed: position set inline from trigger rect (avoids clipping & off-screen anchor) */
+.dash-career-panel--fixed {
+  position: fixed;
+  right: auto;
+  max-height: min(70vh, 420px);
 }
 
 .dash-career-panel-head {
@@ -2042,7 +2049,8 @@ html[data-theme="dark"] .dash-sidebar-link--logout:hover {
   -webkit-backdrop-filter: blur(var(--brand-glass-blur));
   backdrop-filter: blur(var(--brand-glass-blur));
   max-width: 100%;
-  overflow-x: hidden;
+  /* Do not clip overflow-x here — it clips absolutely positioned popovers (career menu) */
+  overflow-x: visible;
 }
 
 .dash-navbar {
@@ -2090,14 +2098,32 @@ html[data-theme="dark"] .dash-sidebar-link--logout:hover {
     flex: 1 1 100%;
     width: 100%;
     max-width: 100%;
-    justify-content: flex-end;
+    min-width: 0;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--text-3) 35%, transparent) transparent;
     border-left: none;
     margin-left: 0;
     padding-left: 0;
     padding-top: 8px;
+    padding-bottom: 4px;
     margin-top: 4px;
     border-top: 1px solid var(--border);
     box-sizing: border-box;
+  }
+
+  .dash-navbar-tools::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .dash-navbar-tools::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 10px;
   }
 }
 
@@ -2241,6 +2267,9 @@ html[data-theme="dark"] .dash-navbar-logout:hover {
   min-width: 0;
   min-height: 0;
   background: transparent;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 @media (max-width: 1023px) {
