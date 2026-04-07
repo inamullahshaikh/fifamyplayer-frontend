@@ -602,11 +602,23 @@ html[data-theme="dark"] .nav-theme {
   font-family: inherit;
   cursor: pointer;
   max-width: min(240px, 46vw);
+  min-width: 0;
   transition:
     background 0.15s,
     border-color 0.15s,
     color 0.15s,
     transform 0.15s;
+}
+
+@media (max-width: 520px) {
+  .dash-career-trigger {
+    max-width: none;
+    padding: 8px;
+  }
+
+  .dash-career-trigger-label {
+    display: none;
+  }
 }
 
 .dash-career-trigger:hover:not(:disabled) {
@@ -2029,6 +2041,8 @@ html[data-theme="dark"] .dash-sidebar-link--logout:hover {
   background: var(--brand-glass-bg);
   -webkit-backdrop-filter: blur(var(--brand-glass-blur));
   backdrop-filter: blur(var(--brand-glass-blur));
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .dash-navbar {
@@ -2045,12 +2059,45 @@ html[data-theme="dark"] .dash-sidebar-link--logout:hover {
   position: sticky;
   z-index: 125;
   top: 0;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 1023px) {
   .dash-navbar {
     top: 56px;
     padding: 8px 12px 8px 14px;
+    flex-wrap: wrap;
+    align-items: stretch;
+    row-gap: 2px;
+    column-gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .dash-navbar-scroll {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    order: 1;
+  }
+
+  .dash-navbar-tools {
+    order: 2;
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: 100%;
+    justify-content: flex-end;
+    border-left: none;
+    margin-left: 0;
+    padding-left: 0;
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border);
+    box-sizing: border-box;
   }
 }
 
@@ -4231,8 +4278,11 @@ html[data-theme="dark"] .data-cap-notice--dashboard .data-cap-notice-icon {
   padding-bottom: 0;
 }
 
+.dash-main:has(.dash-season-data) .dash-season-data > .ph,
 .dash-main:has(.dash-season-data) .dash-season-data .season-page-header,
-.dash-main:has(.dash-season-data) .dash-season-data .season-stepper-wrap {
+.dash-main:has(.dash-season-data) .dash-season-data .season-stepper-wrap,
+.dash-main:has(.dash-season-data) .dash-season-data .data-cap-notice,
+.dash-main:has(.dash-season-data) .dash-season-data .data-cap-notice-group {
   flex-shrink: 0;
 }
 
@@ -4277,6 +4327,38 @@ html[data-theme="dark"] .data-cap-notice--dashboard .data-cap-notice-icon {
 .dash-main:has(.dash-season-data) .dash-season-data .season-alert {
   margin-top: 16px;
   flex-shrink: 0;
+}
+
+/* Phones / tablets: avoid nested scroll + clipped flex children (iOS / small viewports) */
+@media (max-width: 1023px) {
+  .dash-main:has(.dash-season-data) {
+    overflow: visible;
+    display: block;
+    min-height: 0;
+  }
+
+  .dash-main:has(.dash-season-data) .dash-season-data {
+    display: block;
+    flex: none;
+    min-height: unset;
+    overflow: visible;
+    padding-bottom: 48px;
+  }
+
+  .dash-main:has(.dash-season-data) .dash-season-data .season-main-card {
+    display: block;
+    flex: none;
+    min-height: unset;
+    overflow: visible;
+    margin-top: 16px;
+  }
+
+  .dash-main:has(.dash-season-data) .dash-season-data .season-content {
+    flex: none;
+    min-height: unset;
+    overflow: visible;
+    margin-bottom: 16px;
+  }
 }
 
 .season-page-header {
@@ -5159,6 +5241,28 @@ select.season-award-select {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1023px) {
+  .dash-main:has(.dash-yearly-data) {
+    overflow: visible;
+    display: block;
+    min-height: 0;
+  }
+
+  .dash-main:has(.dash-yearly-data) .dash-yearly-data {
+    display: block;
+    flex: none;
+    min-height: unset;
+    overflow: visible;
+    padding-bottom: 48px;
+  }
+
+  .dash-main:has(.dash-yearly-data) .dash-yearly-data .yearly-main {
+    flex: none;
+    min-height: unset;
+    overflow: visible;
+  }
 }
 
 .yearly-page-header {

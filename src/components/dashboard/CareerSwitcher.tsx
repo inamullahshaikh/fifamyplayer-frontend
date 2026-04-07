@@ -98,6 +98,11 @@ export default function CareerSwitcher() {
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-controls="dash-career-switcher-panel"
+        aria-label={
+          players.length > 1
+            ? `Switch career, ${displayName}, ${players.length} careers`
+            : `Switch career, ${displayName}`
+        }
         disabled={loading || players.length === 0}
         onClick={() => setOpen((o) => !o)}
       >
