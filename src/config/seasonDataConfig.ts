@@ -109,7 +109,7 @@ const LA_LIGA_TROPHIES: ClubTrophyId[] = [
 /** Premier League teams */
 const PREMIER_LEAGUE_COMPETITIONS = [
   { id: "pl" as const, label: "Premier League" },
-  { id: "fa" as const, label: "FA Cup" },
+  { id: "fa" as const, label: "Emirates FA Cup" },
   { id: "efl" as const, label: "Carabao Cup" },
   { id: "ucl" as const, label: "UEFA Champions League" },
   { id: "uesc" as const, label: "UEFA Super Cup" },
@@ -377,8 +377,8 @@ export const CLUB_TROPHY_LABEL: Record<string, string> = {
 
 /** International competitions. */
 export const INT_COMPETITIONS: { id: IntCompetitionId; label: string }[] = [
-  { id: "friendly", label: "Friendlies" },
-  { id: "wcq", label: "World Cup Qualifiers" },
+  { id: "friendly", label: "International Friendlies" },
+  { id: "wcq", label: "FIFA World Cup Qualifiers" },
   { id: "wc", label: "FIFA World Cup" },
   { id: "finalissima", label: "Finalissima" },
   { id: "euro", label: "UEFA European Championship" },
