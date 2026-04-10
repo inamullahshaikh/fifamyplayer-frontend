@@ -6,7 +6,7 @@ export type PlayerRow = {
   position?: string
   value?: number | string
   retired?: boolean
-  /** Backend path e.g. `/uploads/avatars/...` */
+  /** Public avatar URL (`https://...` R2) or `/uploads/avatars/...` (local). */
   avatarUrl?: string
 }
 

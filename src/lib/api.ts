@@ -21,10 +21,15 @@ export function apiUrl(path: string): string {
   return `${normalizedBase}${normalizedPath}`
 }
 
-/** Absolute URL for uploaded static files (`/uploads/...`) when API is on another origin. */
+/**
+ * Resolves avatar / upload URLs for `<img src>`.
+ * - Absolute `https://` (e.g. Cloudflare R2) is returned as-is.
+ * - `/uploads/...` is prefixed with `VITE_API_BASE_URL` when set (cross-origin API).
+ */
 export function publicUploadUrl(relativePath: string | undefined | null): string {
   if (!relativePath || typeof relativePath !== 'string') return ''
   const p = relativePath.trim()
+  if (p.startsWith('http://') || p.startsWith('https://')) return p
   if (!p.startsWith('/uploads')) return ''
   const base = getApiBaseUrl()
   if (!base) return p
