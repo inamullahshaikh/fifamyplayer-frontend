@@ -47,6 +47,7 @@ export type SeasonCompRow = {
   goals: number
   assists: number
   avgrating?: number
+  finish?: string
 }
 
 export type SeasonBreakdown = {
@@ -79,6 +80,7 @@ export function statsBySeasonWithBreakdown(
         goals: Number(r.goals) || 0,
         assists: Number(r.assists) || 0,
         avgrating: r.avgrating != null && Number(r.avgrating) > 0 ? Number(r.avgrating) : undefined,
+        finish: r.finish != null && String(r.finish).trim() ? String(r.finish).trim() : undefined,
       }))
     const intRows: Omit<SeasonCompRow, 'team'>[] = int
       .filter((r) => r.season === season)
@@ -88,6 +90,7 @@ export function statsBySeasonWithBreakdown(
         goals: Number(r.goals) || 0,
         assists: Number(r.assists) || 0,
         avgrating: r.avgrating != null && Number(r.avgrating) > 0 ? Number(r.avgrating) : undefined,
+        finish: r.finish != null && String(r.finish).trim() ? String(r.finish).trim() : undefined,
       }))
     const allRows = [
       ...clubRows.map((r) => ({ apps: r.apps, goals: r.goals, assists: r.assists, avgrating: r.avgrating })),
@@ -191,19 +194,43 @@ export function bestPerformances(club: SeasonDataRow[], int: IntDataRow[], yearl
   }
 }
 
+export type CompetitionStatsAggregate = {
+  competition: string
+  apps: number
+  goals: number
+  assists: number
+  avgrating?: number
+  finishesSummary?: string
+}
+
 /** Stats by competition (club + int). */
 export function statsByCompetition(
   club: SeasonDataRow[],
   int: IntDataRow[]
-): { competition: string; apps: number; goals: number; assists: number; avgrating?: number }[] {
-  const map = new Map<string, { apps: number; goals: number; assists: number; ratings: number[] }>()
-  const add = (comp: string, r: { apps?: number; goals?: number; assists?: number; avgrating?: number }) => {
+): CompetitionStatsAggregate[] {
+  const map = new Map<
+    string,
+    { apps: number; goals: number; assists: number; ratings: number[]; finishSet: Set<string> }
+  >()
+  const add = (
+    comp: string,
+    r: {
+      apps?: number
+      goals?: number
+      assists?: number
+      avgrating?: number
+      finish?: string
+    },
+  ) => {
     const key = String(comp ?? '').trim() || '—'
-    const cur = map.get(key) ?? { apps: 0, goals: 0, assists: 0, ratings: [] }
+    const cur =
+      map.get(key) ?? { apps: 0, goals: 0, assists: 0, ratings: [], finishSet: new Set<string>() }
     cur.apps += Number(r.apps) || 0
     cur.goals += Number(r.goals) || 0
     cur.assists += Number(r.assists) || 0
     if (r.avgrating != null && Number(r.avgrating) > 0) cur.ratings.push(Number(r.avgrating))
+    const f = r.finish != null && String(r.finish).trim() ? String(r.finish).trim() : ''
+    if (f) cur.finishSet.add(f)
     map.set(key, cur)
   }
   for (const r of club) add(r.competition ?? '', r)
@@ -215,11 +242,22 @@ export function statsByCompetition(
       goals: v.goals,
       assists: v.assists,
       avgrating: v.ratings.length > 0 ? Math.round((v.ratings.reduce((a, b) => a + b, 0) / v.ratings.length) * 100) / 100 : undefined,
+      finishesSummary:
+        v.finishSet.size > 0
+          ? [...v.finishSet].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).join(' · ')
+          : undefined,
     }))
     .sort((a, b) => b.goals + b.assists - (a.goals + a.assists))
 }
 
-export type TeamCompRow = { competition: string; apps: number; goals: number; assists: number; avgrating?: number }
+export type TeamCompRow = {
+  competition: string
+  apps: number
+  goals: number
+  assists: number
+  avgrating?: number
+  finishesSummary?: string
+}
 
 export type TeamWithBreakdown = {
   team: string
@@ -232,7 +270,19 @@ export type TeamWithBreakdown = {
 
 /** Stats by team with per-competition breakdown (club only - season_data has team). */
 export function statsByTeamWithBreakdown(rows: SeasonDataRow[]): TeamWithBreakdown[] {
-  const teamMap = new Map<string, { apps: number; goals: number; assists: number; ratings: number[]; compMap: Map<string, { apps: number; goals: number; assists: number; ratings: number[] }> }>()
+  const teamMap = new Map<
+    string,
+    {
+      apps: number
+      goals: number
+      assists: number
+      ratings: number[]
+      compMap: Map<
+        string,
+        { apps: number; goals: number; assists: number; ratings: number[]; finishSet: Set<string> }
+      >
+    }
+  >()
   for (const r of rows) {
     const teamKey = String(r.team ?? '').trim() || '—'
     let teamCur = teamMap.get(teamKey)
@@ -248,13 +298,15 @@ export function statsByTeamWithBreakdown(rows: SeasonDataRow[]): TeamWithBreakdo
     const compKey = String(r.competition ?? '').trim() || '—'
     let compCur = teamCur.compMap.get(compKey)
     if (!compCur) {
-      compCur = { apps: 0, goals: 0, assists: 0, ratings: [] }
+      compCur = { apps: 0, goals: 0, assists: 0, ratings: [], finishSet: new Set<string>() }
       teamCur.compMap.set(compKey, compCur)
     }
     compCur.apps += Number(r.apps) || 0
     compCur.goals += Number(r.goals) || 0
     compCur.assists += Number(r.assists) || 0
     if (r.avgrating != null && Number(r.avgrating) > 0) compCur.ratings.push(Number(r.avgrating))
+    const f = r.finish != null && String(r.finish).trim() ? String(r.finish).trim() : ''
+    if (f) compCur.finishSet.add(f)
   }
   return Array.from(teamMap.entries())
     .map(([team, v]) => {
@@ -265,6 +317,10 @@ export function statsByTeamWithBreakdown(rows: SeasonDataRow[]): TeamWithBreakdo
           goals: c.goals,
           assists: c.assists,
           avgrating: c.ratings.length > 0 ? Math.round((c.ratings.reduce((a, b) => a + b, 0) / c.ratings.length) * 100) / 100 : undefined,
+          finishesSummary:
+            c.finishSet.size > 0
+              ? [...c.finishSet].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).join(' · ')
+              : undefined,
         }))
         .sort((a, b) => b.goals + b.assists - (a.goals + a.assists))
       return {

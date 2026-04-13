@@ -1201,6 +1201,22 @@ html[data-theme="dark"] .dash-navbar-theme {
   background: transparent !important;
 }
 
+/* When Spline/WebGL fails, keep hero layout without breaking the page */
+.hero-spline--fallback {
+  background:
+    radial-gradient(
+      circle at 35% 30%,
+      color-mix(in srgb, var(--green-light) 35%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 70% 65%,
+      color-mix(in srgb, #818cf8 28%, transparent),
+      transparent 50%
+    );
+  border: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
+}
+
 .hero-logo {
   width: min(360px, 100%);
   height: auto;
@@ -4907,6 +4923,34 @@ html[data-theme="dark"] .season-comp-card:hover {
   font-weight: 500;
 }
 
+.season-comp-stat--finish {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+
+.season-comp-stat--finish-league .season-comp-finish-select {
+  max-width: 140px;
+}
+
+.season-edit-hint {
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--green) 7%, var(--bg));
+}
+
+.season-comp-finish-select {
+  width: 100%;
+  max-width: 220px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text-1);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 @media (max-width: 640px) {
   .season-comp-grid {
     grid-template-columns: 1fr;
@@ -7332,6 +7376,33 @@ html[data-theme="dark"] .stats-section--by-season .stats-season-intro-title {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-2);
+}
+
+.stats-season-breakdown-finish {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent, #6366f1);
+  letter-spacing: 0.02em;
+}
+
+.stats-comp-finishes {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
+.stats-team-finish-col {
+  font-size: 0.8rem;
+  font-weight: 600;
+  max-width: 140px;
+  vertical-align: middle;
+}
+
+.stats-team-finish-text {
+  color: var(--text-2);
+  line-height: 1.35;
 }
 
 .stats-season-breakdown-row-stats {

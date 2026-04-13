@@ -44,6 +44,7 @@ import laLigaLogo from "../assets/images/logos/la-liga.png";
 import copaDelReyLogo from "../assets/images/logos/copa-del-rey.png";
 import superCopaLogo from "../assets/images/logos/super-copa-de-espana.png";
 import championsLeagueLogo from "../assets/images/logos/champions-league.png";
+import europaLeagueLogo from "../assets/images/logos/europa-league.png";
 import conferenceLeagueLogo from "../assets/images/logos/uefa-conference-league-logo.png";
 import uefaSuperCupLogo from "../assets/images/logos/uefa-super-cup.png";
 import premierLeagueLogo from "../assets/images/logos/premier-league.png";
@@ -137,6 +138,7 @@ export const CLUB_COMPETITION_IMAGES: Record<ClubCompetitionId, string> = {
   cdr: copaDelReyLogo,
   sde: superCopaLogo,
   ucl: championsLeagueLogo,
+  uel: europaLeagueLogo,
   uesc: uefaSuperCupLogo,
   uecl: conferenceLeagueLogo,
   usc: uefaSuperCupLogo,
@@ -160,8 +162,9 @@ export const CLUB_TROPHY_IMAGES: Record<ClubTrophyId, string> = {
   "cdr-trophy": copaDelReyLogo,
   "sde-trophy": superCopaLogo,
   "ucl-trophy": championsLeagueLogo,
-  "uesc-trophy": uefaSuperCupLogo,
+  "uel-trophy": europaLeagueLogo,
   "uecl-trophy": conferenceLeagueLogo,
+  "uesc-trophy": uefaSuperCupLogo,
   "usc-trophy": uefaSuperCupLogo,
   "pl-trophy": premierLeagueLogo,
   "fa-trophy": faCupLogo,

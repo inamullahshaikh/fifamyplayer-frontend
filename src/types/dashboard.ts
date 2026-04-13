@@ -26,6 +26,8 @@ export type SeasonDataRow = {
   goals?: number
   assists?: number
   avgrating?: number
+  /** League place, cup stage, or qualifier outcome (optional). */
+  finish?: string
   team?: string
 }
 
@@ -44,6 +46,7 @@ export type IntDataRow = {
   goals?: number
   assists?: number
   avgrating?: number
+  finish?: string
 }
 
 export type TrophyRow = {

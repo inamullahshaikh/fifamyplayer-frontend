@@ -26,6 +26,8 @@ import {
 import {
   CLUB_TROPHY_LABEL,
   COMPETITION_LABELS,
+  formatFinishForDisplay,
+  formatFinishesSummaryForCompetition,
   INT_TROPHIES,
   TEAM_LABELS,
 } from "../config/seasonDataConfig";
@@ -48,6 +50,7 @@ import {
 } from "../components/stats/StatsAnalyticsCharts";
 import { useChartTheme } from "../hooks/useChartTheme";
 import { useStatsApi } from "../hooks/useStatsApi";
+import type { CompetitionStatsAggregate } from "../lib/statsAggregates";
 import type { TrophyRow } from "../types/dashboard";
 
 const INT_TROPHY_LABELS: Record<string, string> = Object.fromEntries(
@@ -1251,6 +1254,14 @@ export default function StatsPage() {
                                                   {teamLabel}
                                                 </span>
                                               )}
+                                              {row.finish && (
+                                                <span className="stats-season-breakdown-finish">
+                                                  {formatFinishForDisplay(
+                                                    row.competition,
+                                                    row.finish,
+                                                  )}
+                                                </span>
+                                              )}
                                             </div>
                                             <div className="stats-season-breakdown-row-stats">
                                               <span className="stats-season-breakdown-stat">
@@ -1330,6 +1341,14 @@ export default function StatsPage() {
                                               <span className="stats-season-breakdown-row-name">
                                                 {compLabel}
                                               </span>
+                                              {row.finish && (
+                                                <span className="stats-season-breakdown-finish">
+                                                  {formatFinishForDisplay(
+                                                    row.competition,
+                                                    row.finish,
+                                                  )}
+                                                </span>
+                                              )}
                                             </div>
                                             <div className="stats-season-breakdown-row-stats">
                                               <span className="stats-season-breakdown-stat">
@@ -1702,7 +1721,7 @@ export default function StatsPage() {
 
                     <div className="stats-tab-data">
                       <div className="stats-comp-grid">
-                        {api.byCompetition.map((row, idx) => {
+                        {api.byCompetition.map((row: CompetitionStatsAggregate, idx) => {
                           const logo = getCompetitionLogo(row.competition);
                           const label =
                             COMPETITION_LABELS[row.competition] ??
@@ -1731,6 +1750,14 @@ export default function StatsPage() {
                                   <span className="stats-comp-card-name">
                                     {label}
                                   </span>
+                                  {row.finishesSummary && (
+                                    <span className="stats-comp-finishes muted-text">
+                                      {formatFinishesSummaryForCompetition(
+                                        row.competition,
+                                        row.finishesSummary,
+                                      )}
+                                    </span>
+                                  )}
                                 </div>
                                 <span
                                   className="stats-comp-rank"
@@ -1859,6 +1886,7 @@ export default function StatsPage() {
                                     <thead>
                                       <tr>
                                         <th>Competition</th>
+                                        <th className="stats-team-finish-col">Finish</th>
                                         <th className="stats-team-num">Apps</th>
                                         <th className="stats-team-num">G</th>
                                         <th className="stats-team-num">A</th>
@@ -1892,6 +1920,18 @@ export default function StatsPage() {
                                                 )}
                                                 {compLabel}
                                               </span>
+                                            </td>
+                                            <td className="stats-team-finish-col">
+                                              {b.finishesSummary ? (
+                                                <span className="stats-team-finish-text">
+                                                  {formatFinishesSummaryForCompetition(
+                                                    b.competition,
+                                                    b.finishesSummary,
+                                                  )}
+                                                </span>
+                                              ) : (
+                                                <span className="muted-text">—</span>
+                                              )}
                                             </td>
                                             <td className="stats-team-num">
                                               {b.apps}

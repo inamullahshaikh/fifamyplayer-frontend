@@ -20,6 +20,7 @@ export type ClubCompetitionId =
   | "cdr" // Copa del Rey
   | "sde" // Supercopa de España
   | "ucl" // Champions League
+  | "uel" // UEFA Europa League
   | "uesc" // UEFA Super Cup
   | "uecl" // Europa Conference League
   | "usc" // UEFA Super Cup (legacy id; same competition as uesc — not listed twice in UI)
@@ -42,6 +43,7 @@ export type ClubTrophyId =
   | "cdr-trophy"
   | "sde-trophy"
   | "ucl-trophy"
+  | "uel-trophy"
   | "uesc-trophy"
   | "uecl-trophy"
   | "usc-trophy"
@@ -93,8 +95,9 @@ const LA_LIGA_COMPETITIONS = [
   { id: "cdr" as const, label: "Copa del Rey" },
   { id: "sde" as const, label: "Supercopa de España" },
   { id: "ucl" as const, label: "UEFA Champions League" },
-  { id: "uesc" as const, label: "UEFA Super Cup" },
+  { id: "uel" as const, label: "UEFA Europa League" },
   { id: "uecl" as const, label: "UEFA Europa Conference League" },
+  { id: "uesc" as const, label: "UEFA Super Cup" },
 ];
 
 const LA_LIGA_TROPHIES: ClubTrophyId[] = [
@@ -102,29 +105,32 @@ const LA_LIGA_TROPHIES: ClubTrophyId[] = [
   "cdr-trophy",
   "sde-trophy",
   "ucl-trophy",
-  "uesc-trophy",
+  "uel-trophy",
   "uecl-trophy",
+  "uesc-trophy",
 ];
 
 /** Premier League teams */
 const PREMIER_LEAGUE_COMPETITIONS = [
   { id: "pl" as const, label: "Premier League" },
-  { id: "fa" as const, label: "Emirates FA Cup" },
-  { id: "efl" as const, label: "Carabao Cup" },
+  { id: "fa" as const, label: "FA Cup" },
+  { id: "efl" as const, label: "EFL Cup" },
+  { id: "cs" as const, label: "FA Community Shield" },
   { id: "ucl" as const, label: "UEFA Champions League" },
-  { id: "uesc" as const, label: "UEFA Super Cup" },
+  { id: "uel" as const, label: "UEFA Europa League" },
   { id: "uecl" as const, label: "UEFA Europa Conference League" },
-  { id: "cs" as const, label: "Community Shield" },
+  { id: "uesc" as const, label: "UEFA Super Cup" },
 ];
 
 const PREMIER_LEAGUE_TROPHIES: ClubTrophyId[] = [
   "pl-trophy",
   "fa-trophy",
   "efl-trophy",
-  "ucl-trophy",
-  "uesc-trophy",
-  "uecl-trophy",
   "cs-trophy",
+  "ucl-trophy",
+  "uel-trophy",
+  "uecl-trophy",
+  "uesc-trophy",
 ];
 
 /** Bundesliga teams */
@@ -133,8 +139,9 @@ const BUNDESLIGA_COMPETITIONS = [
   { id: "dfb" as const, label: "DFB-Pokal" },
   { id: "dfl" as const, label: "DFL-Supercup" },
   { id: "ucl" as const, label: "UEFA Champions League" },
-  { id: "uesc" as const, label: "UEFA Super Cup" },
+  { id: "uel" as const, label: "UEFA Europa League" },
   { id: "uecl" as const, label: "UEFA Europa Conference League" },
+  { id: "uesc" as const, label: "UEFA Super Cup" },
 ];
 
 const BUNDESLIGA_TROPHIES: ClubTrophyId[] = [
@@ -142,8 +149,9 @@ const BUNDESLIGA_TROPHIES: ClubTrophyId[] = [
   "dfb-trophy",
   "dfl-trophy",
   "ucl-trophy",
-  "uesc-trophy",
+  "uel-trophy",
   "uecl-trophy",
+  "uesc-trophy",
 ];
 
 /** Serie A teams */
@@ -152,8 +160,9 @@ const SERIE_A_COMPETITIONS = [
   { id: "ci" as const, label: "Coppa Italia" },
   { id: "si" as const, label: "Supercoppa Italiana" },
   { id: "ucl" as const, label: "UEFA Champions League" },
-  { id: "uesc" as const, label: "UEFA Super Cup" },
+  { id: "uel" as const, label: "UEFA Europa League" },
   { id: "uecl" as const, label: "UEFA Europa Conference League" },
+  { id: "uesc" as const, label: "UEFA Super Cup" },
 ];
 
 const SERIE_A_TROPHIES: ClubTrophyId[] = [
@@ -161,8 +170,9 @@ const SERIE_A_TROPHIES: ClubTrophyId[] = [
   "ci-trophy",
   "si-trophy",
   "ucl-trophy",
-  "uesc-trophy",
+  "uel-trophy",
   "uecl-trophy",
+  "uesc-trophy",
 ];
 
 /** Ligue 1 teams */
@@ -171,8 +181,9 @@ const LIGUE_1_COMPETITIONS = [
   { id: "cdf" as const, label: "Coupe de France" },
   { id: "tdc" as const, label: "Trophée des Champions" },
   { id: "ucl" as const, label: "UEFA Champions League" },
-  { id: "uesc" as const, label: "UEFA Super Cup" },
+  { id: "uel" as const, label: "UEFA Europa League" },
   { id: "uecl" as const, label: "UEFA Europa Conference League" },
+  { id: "uesc" as const, label: "UEFA Super Cup" },
 ];
 
 const LIGUE_1_TROPHIES: ClubTrophyId[] = [
@@ -180,8 +191,9 @@ const LIGUE_1_TROPHIES: ClubTrophyId[] = [
   "cdf-trophy",
   "tdc-trophy",
   "ucl-trophy",
-  "uesc-trophy",
+  "uel-trophy",
   "uecl-trophy",
+  "uesc-trophy",
 ];
 
 /** All teams from assets/images/teams/ */
@@ -290,6 +302,20 @@ export function getDomesticLeagueKeyForTeam(
   return TEAM_DOMESTIC_LEAGUE[teamId] ?? null;
 }
 
+/** Table size for domestic league placement (1..N), aligned with real league sizes. */
+export const DOMESTIC_LEAGUE_PLACE_COUNT: Record<DomesticLeagueKey, number> = {
+  "premier-league": 20,
+  "la-liga": 20,
+  "serie-a": 20,
+  bundesliga: 18,
+  "ligue-1": 18,
+};
+
+export function getMaxLeaguePlaceForTeam(teamId: string): number | null {
+  const league = getDomesticLeagueKeyForTeam(teamId);
+  return league ? DOMESTIC_LEAGUE_PLACE_COUNT[league] : null;
+}
+
 const TEAM_BY_ID = Object.fromEntries(TEAMS.map((t) => [t.id, t]));
 
 /** Labels for team IDs. */
@@ -352,8 +378,9 @@ export const CLUB_TROPHIES: { id: ClubTrophyId; label: string }[] = [
   { id: "cdr-trophy", label: "Copa del Rey" },
   { id: "sde-trophy", label: "Supercopa de España" },
   { id: "ucl-trophy", label: "UEFA Champions League" },
-  { id: "uesc-trophy", label: "UEFA Super Cup" },
+  { id: "uel-trophy", label: "UEFA Europa League" },
   { id: "uecl-trophy", label: "UEFA Europa Conference League" },
+  { id: "uesc-trophy", label: "UEFA Super Cup" },
   { id: "pl-trophy", label: "Premier League" },
   { id: "fa-trophy", label: "FA Cup" },
   { id: "efl-trophy", label: "Carabao Cup" },
@@ -445,6 +472,13 @@ const SHARED_AWARD_GROUPS: AwardSelectGroup[] = [
     awards: [
       "UEFA Champions League Best Player",
       "UEFA Champions League Top Goalscorer",
+    ],
+  },
+  {
+    label: "UEFA Europa League",
+    awards: [
+      "UEFA Europa League Best Player",
+      "UEFA Europa League Top Goalscorer",
     ],
   },
   {
@@ -603,3 +637,273 @@ export function awardUsesQuantity(awardName: string): boolean {
 
 /** Season format: XXXX/XX */
 export const SEASON_REGEX = /^\d{4}\/\d{2}$/;
+
+/** How to capture & display end-of-season outcome per competition. */
+export type CompetitionFinishMode =
+  | "league"
+  | "cup"
+  | "supercup"
+  | "qualifiers"
+  | "none";
+
+function finishOptionsFromLabels(
+  labels: readonly string[],
+): { value: string; label: string }[] {
+  return [{ value: "", label: "Not set" }, ...labels.map((l) => ({ value: l, label: l }))];
+}
+
+/** FA Cup / Coupe de France / DFB-Pokal — stored value = label. */
+const FA_STYLE_DOMESTIC_CUP_FINISHES = [
+  "Winner",
+  "Runner-up",
+  "Semi-finals",
+  "Quarter-finals",
+  "Round of 16",
+  "Round of 32",
+  "Round of 64",
+  "Round of 128",
+] as const;
+
+/** Copa del Rey (no first round of 128 in this list). */
+const COPA_DEL_REY_FINISHES = [
+  "Winner",
+  "Runner-up",
+  "Semi-finals",
+  "Quarter-finals",
+  "Round of 16",
+  "Round of 32",
+  "Round of 64",
+] as const;
+
+const EFL_CUP_FINISHES = [
+  "Winner",
+  "Runner-up",
+  "Semi-finals",
+  "Quarter-finals",
+  "Round of 16",
+  "Round of 32",
+  "Round of 64",
+] as const;
+
+const COPPA_ITALIA_FINISHES = [
+  "Winner",
+  "Runner-up",
+  "Semi-finals",
+  "Quarter-finals",
+  "Round of 16",
+] as const;
+
+const UCL_FINISHES = [
+  "Winner",
+  "Runner-up",
+  "Semi-finals",
+  "Quarter-finals",
+  "Round of 16",
+  "Group Stage",
+] as const;
+
+const UEL_UECL_FINISHES = [
+  "Winner",
+  "Runner-up",
+  "Semi-finals",
+  "Quarter-finals",
+  "Round of 16",
+  "Knockout Playoff",
+  "Group Stage",
+] as const;
+
+/** International knockout cups when not EURO / Nations League (group → KO). */
+const INT_GENERIC_KNOCKOUT_FINISHES = [
+  "Winner",
+  "Runner-up",
+  "Semi-finals",
+  "Quarter-finals",
+  "Round of 16",
+] as const;
+
+/**
+ * Default cup stages for int. competitions (excl. EURO / UNL).
+ * @deprecated Prefer getCupStageOptionsForIntCompetition()
+ */
+export const CUP_STAGE_OPTIONS = finishOptionsFromLabels(INT_GENERIC_KNOCKOUT_FINISHES);
+
+/**
+ * Group-stage UEFA tournaments (EURO, UNL) — same stage list as UEL/UECL.
+ * @deprecated Prefer getCupStageOptionsForIntCompetition()
+ */
+export const UEFA_CLUB_CUP_STAGE_OPTIONS = finishOptionsFromLabels(UEL_UECL_FINISHES);
+
+/** International tournaments with group → knockout (UEFA). */
+const INT_CUP_WITH_GROUP_STAGE_IDS = new Set<string>(["euro", "unl"]);
+
+/** Single-match or two-team super cups (e.g. FA Community Shield, DFL-Supercup). */
+export const SUPERCUP_STAGE_OPTIONS = finishOptionsFromLabels(["Winner", "Runner-up"]);
+
+/**
+ * Four-team mini-tournament super cups (semis + final), e.g. Supercopa de España, Supercoppa Italiana.
+ */
+export const SUPERCUP_STAGE_OPTIONS_WITH_SEMIS = finishOptionsFromLabels([
+  "Winner",
+  "Runner-up",
+  "Semi-finals",
+]);
+
+const SUPERCUP_SEMIS_COMPETITION_IDS = new Set<string>(["sde", "si"]);
+
+export function getCupStageOptionsForClubCompetition(
+  competitionId: string,
+): { value: string; label: string }[] {
+  const id = String(competitionId ?? "").trim();
+  switch (id) {
+    case "fa":
+    case "cdf":
+    case "dfb":
+      return finishOptionsFromLabels(FA_STYLE_DOMESTIC_CUP_FINISHES);
+    case "cdr":
+      return finishOptionsFromLabels(COPA_DEL_REY_FINISHES);
+    case "efl":
+      return finishOptionsFromLabels(EFL_CUP_FINISHES);
+    case "ci":
+      return finishOptionsFromLabels(COPPA_ITALIA_FINISHES);
+    case "ucl":
+      return finishOptionsFromLabels(UCL_FINISHES);
+    case "uel":
+    case "uecl":
+      return finishOptionsFromLabels(UEL_UECL_FINISHES);
+    default:
+      return finishOptionsFromLabels(INT_GENERIC_KNOCKOUT_FINISHES);
+  }
+}
+
+export function getCupStageOptionsForIntCompetition(
+  competitionId: string,
+): { value: string; label: string }[] {
+  const id = String(competitionId ?? "").trim();
+  if (INT_CUP_WITH_GROUP_STAGE_IDS.has(id)) {
+    return finishOptionsFromLabels(UEL_UECL_FINISHES);
+  }
+  return finishOptionsFromLabels(INT_GENERIC_KNOCKOUT_FINISHES);
+}
+
+export function getSupercupStageOptionsForClubCompetition(
+  competitionId: string,
+): { value: string; label: string }[] {
+  const id = String(competitionId ?? "").trim();
+  if (SUPERCUP_SEMIS_COMPETITION_IDS.has(id)) {
+    return SUPERCUP_STAGE_OPTIONS_WITH_SEMIS;
+  }
+  return SUPERCUP_STAGE_OPTIONS;
+}
+
+export const QUALIFIER_OUTCOME_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "Not set" },
+  { value: "Group stage", label: "Group stage" },
+  { value: "Play-offs", label: "Play-offs" },
+  { value: "Qualified", label: "Qualified" },
+  { value: "Eliminated", label: "Eliminated" },
+];
+
+const CLUB_COMPETITION_FINISH_MODE: Record<ClubCompetitionId, CompetitionFinishMode> = {
+  ll: "league",
+  pl: "league",
+  bl: "league",
+  sa: "league",
+  l1: "league",
+  cdr: "cup",
+  fa: "cup",
+  efl: "cup",
+  ucl: "cup",
+  uel: "cup",
+  uecl: "cup",
+  dfb: "cup",
+  ci: "cup",
+  cdf: "cup",
+  sde: "supercup",
+  cs: "supercup",
+  dfl: "supercup",
+  si: "supercup",
+  tdc: "supercup",
+  uesc: "supercup",
+  usc: "supercup",
+};
+
+const INT_COMPETITION_FINISH_MODE: Record<IntCompetitionId, CompetitionFinishMode> = {
+  friendly: "none",
+  wcq: "qualifiers",
+  wc: "cup",
+  finalissima: "supercup",
+  euro: "cup",
+  euq: "qualifiers",
+  unl: "cup",
+  "copa-america": "cup",
+  "conmebol-qualifiers": "qualifiers",
+  "gold-cup": "cup",
+  "concacaf-nations-league": "cup",
+  "asian-cup": "cup",
+  "asian-cup-qualifiers": "qualifiers",
+  afcon: "cup",
+  "afcon-qualifiers": "qualifiers",
+  "ofc-nations-cup": "cup",
+};
+
+export function getFinishModeForClubCompetitionId(
+  id: string,
+): CompetitionFinishMode {
+  const k = String(id ?? "").trim() as ClubCompetitionId;
+  return CLUB_COMPETITION_FINISH_MODE[k] ?? "cup";
+}
+
+export function getFinishModeForIntCompetitionId(
+  id: string,
+): CompetitionFinishMode {
+  const k = String(id ?? "").trim() as IntCompetitionId;
+  return INT_COMPETITION_FINISH_MODE[k] ?? "cup";
+}
+
+/** Resolve mode from competition id (international ids checked first — no overlap with club ids). */
+export function getFinishModeForCompetitionId(id: string): CompetitionFinishMode {
+  const t = String(id ?? "").trim();
+  if (t in INT_COMPETITION_FINISH_MODE) {
+    return INT_COMPETITION_FINISH_MODE[t as IntCompetitionId];
+  }
+  if (t in CLUB_COMPETITION_FINISH_MODE) {
+    return CLUB_COMPETITION_FINISH_MODE[t as ClubCompetitionId];
+  }
+  return "cup";
+}
+
+/** Turn stored league place (digits) into ordinal for display; pass through other text. */
+export function formatLeaguePlaceDisplay(raw: string): string {
+  const s = String(raw ?? "").trim();
+  if (!s) return "";
+  const n = parseInt(s, 10);
+  if (!Number.isFinite(n) || n < 1 || String(n) !== s) return s;
+  const j = n % 10;
+  const k = n % 100;
+  if (j === 1 && k !== 11) return `${n}st`;
+  if (j === 2 && k !== 12) return `${n}nd`;
+  if (j === 3 && k !== 13) return `${n}rd`;
+  return `${n}th`;
+}
+
+export function formatFinishForDisplay(competitionId: string, stored: string): string {
+  const s = String(stored ?? "").trim();
+  if (!s) return "";
+  const mode = getFinishModeForCompetitionId(competitionId);
+  if (mode === "league") return formatLeaguePlaceDisplay(s);
+  return s;
+}
+
+/** Aggregate summaries join finishes with " · "; format each segment for display. */
+export function formatFinishesSummaryForCompetition(
+  competitionId: string,
+  summary: string | undefined,
+): string {
+  const s = String(summary ?? "").trim();
+  if (!s) return "";
+  return s
+    .split(" · ")
+    .map((part) => formatFinishForDisplay(competitionId, part.trim()))
+    .filter(Boolean)
+    .join(" · ");
+}

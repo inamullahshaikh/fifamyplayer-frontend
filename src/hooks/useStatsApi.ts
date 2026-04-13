@@ -10,6 +10,7 @@ import {
   statsBySeasonWithBreakdown,
   statsByTeamWithBreakdown,
   statsByYear,
+  type CompetitionStatsAggregate,
 } from '../lib/statsAggregates'
 import type { IntDataRow, SeasonDataRow, TrophyRow, YearlyDataRow } from '../types/dashboard'
 import { apiFetch } from '../lib/api'
@@ -35,7 +36,7 @@ export type StatsApiState = {
   bySeasonWithBreakdown: import('../lib/statsAggregates').SeasonBreakdown[]
   byYear: { year: string; goals: number; assists: number }[]
   best: ReturnType<typeof bestPerformances>
-  byCompetition: { competition: string; apps: number; goals: number; assists: number; avgrating?: number }[]
+  byCompetition: CompetitionStatsAggregate[]
   byTeam: import('../lib/statsAggregates').TeamWithBreakdown[]
 }
 

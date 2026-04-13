@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import Spline from '@splinetool/react-spline'
+
+const Spline = lazy(() => import('@splinetool/react-spline'))
 
 import footballLogo from '../assets/images/football.png'
 import FeatureCard from '../components/FeatureCard'
+import RenderErrorBoundary from '../components/RenderErrorBoundary'
 import SocialLink from '../components/SocialLink'
 import ThemeToggle from '../components/ThemeToggle'
 import {
@@ -139,35 +141,60 @@ export default function LandingPage() {
               onMouseLeave={() => setSplineHover(false)}
               onWheel={(e) => e.preventDefault()}
             >
-              <Spline
-                scene="https://prod.spline.design/qWUGvm4jqwfAxa0R/scene.splinecode"
-                style={{ background: 'transparent' }}
-                onLoad={(splineApp) => {
-                  try {
-                    splineApp.setZoom(1)
-                  } catch {
-                    // ignore if the scene doesn't support it
+              <Suspense
+                fallback={
+                  <div
+                    className="hero-spline hero-spline--fallback"
+                    aria-hidden
+                  />
+                }
+              >
+                <RenderErrorBoundary
+                  fallback={
+                    <div
+                      className="hero-spline hero-spline--fallback"
+                      aria-hidden
+                    />
                   }
+                >
+                  <Spline
+                    scene="https://prod.spline.design/qWUGvm4jqwfAxa0R/scene.splinecode"
+                    style={{ background: 'transparent' }}
+                    onLoad={(splineApp) => {
+                      try {
+                        splineApp.setZoom(1)
+                      } catch {
+                        // ignore if the scene doesn't support it
+                      }
 
-                  try {
-                    splineApp.setBackgroundColor('rgba(0, 0, 0, 0)')
-                  } catch {
-                    // ignore if not supported
-                  }
+                      try {
+                        splineApp.setBackgroundColor('rgba(0, 0, 0, 0)')
+                      } catch {
+                        // ignore if not supported
+                      }
 
-                  try {
-                    const controls: any = (splineApp as any).controls
-                    if (controls) {
-                      controls.enableZoom = false
-                      controls.enablePan = false
-                      controls.enableRotate = true
-                      controls.zoomSpeed = 0
-                    }
-                  } catch {
-                    // ignore if controls can't be patched
-                  }
-                }}
-              />
+                      try {
+                        const controls: unknown = (splineApp as { controls?: unknown })
+                          .controls
+                        if (controls && typeof controls === 'object') {
+                          const c = controls as {
+                            enableZoom?: boolean
+                            enablePan?: boolean
+                            enableRotate?: boolean
+                            zoomSpeed?: number
+                          }
+                          c.enableZoom = false
+                          c.enablePan = false
+                          c.enableRotate = true
+                          c.zoomSpeed = 0
+                        }
+                      } catch {
+                        // ignore if controls can't be patched
+                      }
+                    }}
+                  />
+                </RenderErrorBoundary>
+              </Suspense>
             </div>
           </div>
         </section>

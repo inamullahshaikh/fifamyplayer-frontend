@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   CLUB_COMPETITION_IMAGES,
   CLUB_TROPHY_IMAGES,
@@ -11,11 +11,19 @@ import {
   awardUsesQuantity,
   CLUB_TROPHIES,
   getAwardSelectGroupsForTeam,
+  getCupStageOptionsForClubCompetition,
+  getCupStageOptionsForIntCompetition,
+  getFinishModeForClubCompetitionId,
+  getFinishModeForIntCompetitionId,
+  getMaxLeaguePlaceForTeam,
   INT_COMPETITIONS,
   INT_TROPHIES,
   isSelectableAwardForTeam,
+  QUALIFIER_OUTCOME_OPTIONS,
   SEASON_REGEX,
   LEAGUES_WITH_TEAMS,
+  getSupercupStageOptionsForClubCompetition,
+  SUPERCUP_STAGE_OPTIONS,
   TEAMS_SORTED_BY_LEAGUE,
   TEAM_CLUB_COMPETITIONS,
   TEAM_CLUB_TROPHIES,
@@ -44,22 +52,148 @@ const STEPS = [
 ]
 
 type ClubCompetitionRow = {
+  _id?: string
   competition: ClubCompetitionId
   apps: number
   goals: number
   assists: number
   avgrating: number
+  finish: string
 }
 
 type IntCompetitionRow = {
+  _id?: string
   competition: IntCompetitionId
   apps: number
   goals: number
   assists: number
   avgrating: number
+  finish: string
 }
 
 type AwardRow = { award: string; quantity: number }
+
+function CompetitionFinishField({
+  competitionId,
+  scope,
+  clubTeamId,
+  value,
+  onChange,
+}: {
+  competitionId: string
+  scope: 'club' | 'int'
+  /** Used to cap domestic league place (1..18 or 1..20). */
+  clubTeamId?: string
+  value: string
+  onChange: (next: string) => void
+}) {
+  const mode =
+    scope === 'club'
+      ? getFinishModeForClubCompetitionId(competitionId)
+      : getFinishModeForIntCompetitionId(competitionId)
+
+  if (mode === 'none') return null
+
+  if (mode === 'league') {
+    const maxPlace =
+      scope === 'club' && clubTeamId
+        ? getMaxLeaguePlaceForTeam(clubTeamId) ?? 20
+        : 20
+    const trimmed = String(value ?? '').trim()
+    const parsed = parseInt(trimmed, 10)
+    const inRange =
+      trimmed !== '' &&
+      Number.isFinite(parsed) &&
+      parsed >= 1 &&
+      parsed <= maxPlace &&
+      String(parsed) === trimmed
+
+    const placeOptions: { value: string; label: string }[] = [
+      { value: '', label: 'Not set' },
+      ...Array.from({ length: maxPlace }, (_, i) => {
+        const v = String(i + 1)
+        return { value: v, label: v }
+      }),
+    ]
+    if (trimmed !== '' && !inRange) {
+      placeOptions.push({ value: trimmed, label: `${trimmed} (saved)` })
+    }
+
+    const selectValue = placeOptions.some((o) => o.value === trimmed) ? trimmed : ''
+
+    return (
+      <label className="season-comp-stat season-comp-stat--finish season-comp-stat--finish-league">
+        <span className="season-comp-stat-label">Team league place</span>
+        <select
+          className="season-comp-finish-select"
+          value={selectValue}
+          onChange={(e) => onChange(e.target.value)}
+        >
+          {placeOptions.map((o) => (
+            <option key={o.value || '__empty'} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    )
+  }
+
+  const options =
+    mode === 'cup'
+      ? scope === 'club'
+        ? getCupStageOptionsForClubCompetition(competitionId)
+        : getCupStageOptionsForIntCompetition(competitionId)
+      : mode === 'supercup'
+        ? scope === 'club'
+          ? getSupercupStageOptionsForClubCompetition(competitionId)
+          : SUPERCUP_STAGE_OPTIONS
+        : QUALIFIER_OUTCOME_OPTIONS
+
+  const trimmed = String(value ?? '').trim()
+  const optionSet = new Set(options.map((o) => o.value))
+  const mergedOptions =
+    trimmed !== '' && !optionSet.has(trimmed)
+      ? [...options, { value: trimmed, label: `${trimmed} (saved)` }]
+      : options
+  const selectValue = mergedOptions.some((o) => o.value === trimmed) ? trimmed : ''
+
+  const label =
+    mode === 'cup'
+      ? 'Team cup run'
+      : mode === 'supercup'
+        ? 'Team result'
+        : 'Team qualifying outcome'
+
+  return (
+    <label className="season-comp-stat season-comp-stat--finish">
+      <span className="season-comp-stat-label">{label}</span>
+      <select
+        className="season-comp-finish-select"
+        value={selectValue}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {mergedOptions.map((o) => (
+          <option key={o.value || '__empty'} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function seasonRowHasStats(
+  row: Pick<ClubCompetitionRow, 'apps' | 'goals' | 'assists' | 'avgrating' | 'finish'>,
+) {
+  return (
+    row.apps > 0 ||
+    row.goals > 0 ||
+    row.assists > 0 ||
+    row.avgrating > 0 ||
+    Boolean(row.finish?.trim())
+  )
+}
 
 async function postJson(url: string, body: object) {
   const res = await apiFetch(url, {
@@ -67,6 +201,28 @@ async function postJson(url: string, body: object) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Request failed: ${res.status}`)
+  }
+  return res.json()
+}
+
+async function putJson(url: string, body: object) {
+  const res = await apiFetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Request failed: ${res.status}`)
+  }
+  return res.json()
+}
+
+async function deleteJson(url: string) {
+  const res = await apiFetch(url, { method: 'DELETE' })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     throw new Error(err.error || `Request failed: ${res.status}`)
@@ -109,8 +265,12 @@ export default function SeasonDataPage() {
       goals: 0,
       assists: 0,
       avgrating: 0,
+      finish: '',
     }))
   )
+  const [seasonEditMode, setSeasonEditMode] = useState(false)
+  /** `${team}|${season}` last hydrated from API for edit mode (avoids duplicate fetches). */
+  const seasonHydratedRef = useRef<string | null>(null)
   const [intTrophies, setIntTrophies] = useState<IntTrophyId[]>([])
   const [awards, setAwards] = useState<AwardRow[]>([])
   const [saving, setSaving] = useState(false)
@@ -162,23 +322,28 @@ export default function SeasonDataPage() {
     setIntRows((prev) =>
       availableIntCompetitions.map((c) => {
         const existing = prev.find((p) => p.competition === c.id)
-        return (
-          existing ?? {
-            competition: c.id,
-            apps: 0,
-            goals: 0,
-            assists: 0,
-            avgrating: 0,
+        if (existing) {
+          return {
+            ...existing,
+            finish: existing.finish ?? '',
           }
-        )
-      })
+        }
+        return {
+          competition: c.id,
+          apps: 0,
+          goals: 0,
+          assists: 0,
+          avgrating: 0,
+          finish: '',
+        }
+      }),
     )
     setIntTrophies((prev) => prev.filter((id) => availableIntTrophies.some((t) => t.id === id)))
   }, [availableIntCompetitions, availableIntTrophies])
 
   const clubComps = team ? (TEAM_CLUB_COMPETITIONS[team] ?? []) : []
 
-  const initClubRows = (selectedTeam: TeamSlug) => {
+  const initClubRows = useCallback((selectedTeam: TeamSlug) => {
     const comps = TEAM_CLUB_COMPETITIONS[selectedTeam] ?? []
     setClubRows(
       comps.map((c) => ({
@@ -187,14 +352,188 @@ export default function SeasonDataPage() {
         goals: 0,
         assists: 0,
         avgrating: 0,
-      }))
+        finish: '',
+      })),
     )
-  }
+  }, [])
+
+  const loadExistingSeasonSnapshot = useCallback(async (
+    seasonTrim: string,
+    teamSlug: TeamSlug,
+    intComps: { id: IntCompetitionId }[],
+    intTrophyOpts: { id: IntTrophyId }[],
+  ) => {
+    const [sdRaw, intRaw, stRaw, itRaw, awRaw] = await Promise.all([
+      apiFetch('/api/season_data').then((r) => r.json()),
+      apiFetch('/api/int_data').then((r) => r.json()),
+      apiFetch('/api/season_trophies').then((r) => r.json()),
+      apiFetch('/api/int_trophies').then((r) => r.json()),
+      apiFetch('/api/season_awards').then((r) => r.json()),
+    ])
+    type Doc = Record<string, unknown>
+    const sd = sdRaw as Doc[]
+    const intd = intRaw as Doc[]
+    const clubTrophyAllow = new Set(TEAM_CLUB_TROPHIES[teamSlug] ?? [])
+    const intTrophyAllow = new Set(intTrophyOpts.map((t) => t.id))
+
+    setClubRows(
+      (TEAM_CLUB_COMPETITIONS[teamSlug] ?? []).map((c) => {
+        const doc = sd.find(
+          (d) =>
+            String(d.season) === seasonTrim &&
+            String(d.team) === teamSlug &&
+            String(d.competition) === c.id,
+        )
+        if (!doc?._id) {
+          return {
+            competition: c.id,
+            apps: 0,
+            goals: 0,
+            assists: 0,
+            avgrating: 0,
+            finish: '',
+          }
+        }
+        return {
+          _id: String(doc._id),
+          competition: c.id,
+          apps: Number(doc.apps) || 0,
+          goals: Number(doc.goals) || 0,
+          assists: Number(doc.assists) || 0,
+          avgrating: Number(doc.avgrating) || 0,
+          finish: doc.finish != null ? String(doc.finish) : '',
+        }
+      }),
+    )
+
+    setIntRows(
+      intComps.map((c) => {
+        const doc = intd.find(
+          (d) => String(d.season) === seasonTrim && String(d.competition) === c.id,
+        )
+        if (!doc?._id) {
+          return {
+            competition: c.id,
+            apps: 0,
+            goals: 0,
+            assists: 0,
+            avgrating: 0,
+            finish: '',
+          }
+        }
+        return {
+          _id: String(doc._id),
+          competition: c.id,
+          apps: Number(doc.apps) || 0,
+          goals: Number(doc.goals) || 0,
+          assists: Number(doc.assists) || 0,
+          avgrating: Number(doc.avgrating) || 0,
+          finish: doc.finish != null ? String(doc.finish) : '',
+        }
+      }),
+    )
+
+    setClubTrophies(
+      (stRaw as Doc[])
+        .filter(
+          (t) =>
+            String(t.season) === seasonTrim &&
+            clubTrophyAllow.has(String(t.competition) as ClubTrophyId),
+        )
+        .map((t) => String(t.competition) as ClubTrophyId),
+    )
+    setIntTrophies(
+      (itRaw as Doc[])
+        .filter(
+          (t) =>
+            String(t.season) === seasonTrim &&
+            intTrophyAllow.has(String(t.competition) as IntTrophyId),
+        )
+        .map((t) => String(t.competition) as IntTrophyId),
+    )
+    setAwards(
+      (awRaw as Doc[])
+        .filter((a) => String(a.season) === seasonTrim)
+        .map((a) => ({
+          award: String(a.award ?? ''),
+          quantity: Math.max(1, Number(a.quantity) || 1),
+        })),
+    )
+  }, [])
 
   const handleTeamSelect = (t: TeamSlug) => {
     setTeam(t)
+    setSeasonEditMode(false)
+    seasonHydratedRef.current = null
     initClubRows(t)
   }
+
+  useEffect(() => {
+    if (step < 2 || !team || !SEASON_REGEX.test(season.trim())) return
+    const sTrim = season.trim()
+    const key = `${team}|${sTrim}`
+
+    if (!dataEntry.existingSeasons.includes(sTrim)) {
+      if (seasonHydratedRef.current !== null) {
+        seasonHydratedRef.current = null
+        initClubRows(team)
+        setIntRows(
+          availableIntCompetitions.map((c) => ({
+            competition: c.id,
+            apps: 0,
+            goals: 0,
+            assists: 0,
+            avgrating: 0,
+            finish: '',
+          })),
+        )
+        setClubTrophies([])
+        setIntTrophies([])
+        setAwards([])
+      }
+      setSeasonEditMode(false)
+      return
+    }
+
+    if (seasonHydratedRef.current === key) return
+
+    let cancelled = false
+    setSeasonError('')
+    ;(async () => {
+      try {
+        await loadExistingSeasonSnapshot(
+          sTrim,
+          team,
+          availableIntCompetitions,
+          availableIntTrophies,
+        )
+        if (!cancelled) {
+          seasonHydratedRef.current = key
+          setSeasonEditMode(true)
+        }
+      } catch (e) {
+        if (!cancelled) {
+          seasonHydratedRef.current = key
+          setSeasonEditMode(false)
+          setSeasonError(
+            e instanceof Error ? e.message : 'Could not load saved season data',
+          )
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [
+    step,
+    team,
+    season,
+    dataEntry.existingSeasons,
+    availableIntCompetitions,
+    availableIntTrophies,
+    loadExistingSeasonSnapshot,
+    initClubRows,
+  ])
 
   const handleNext = () => {
     if (step === 1) {
@@ -204,22 +543,36 @@ export default function SeasonDataPage() {
         return
       }
       setSeasonError('')
+      if (team && !dataEntry.existingSeasons.includes(season.trim())) {
+        seasonHydratedRef.current = null
+        initClubRows(team)
+        setIntRows(
+          availableIntCompetitions.map((c) => ({
+            competition: c.id,
+            apps: 0,
+            goals: 0,
+            assists: 0,
+            avgrating: 0,
+            finish: '',
+          })),
+        )
+        setClubTrophies([])
+        setIntTrophies([])
+        setAwards([])
+        setSeasonEditMode(false)
+      }
     }
     setStep((s) => Math.min(s + 1, STEPS.length - 1))
   }
 
   const handlePrev = () => setStep((s) => Math.max(s - 1, 0))
 
-  const updateClubRow = (idx: number, field: keyof ClubCompetitionRow, value: number) => {
-    setClubRows((rows) =>
-      rows.map((r, i) => (i === idx ? { ...r, [field]: value } : r))
-    )
+  const patchClubRow = (idx: number, patch: Partial<ClubCompetitionRow>) => {
+    setClubRows((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)))
   }
 
-  const updateIntRow = (idx: number, field: keyof IntCompetitionRow, value: number) => {
-    setIntRows((rows) =>
-      rows.map((r, i) => (i === idx ? { ...r, [field]: value } : r))
-    )
+  const patchIntRow = (idx: number, patch: Partial<IntCompetitionRow>) => {
+    setIntRows((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)))
   }
 
   const toggleClubTrophy = (id: ClubTrophyId) => {
@@ -273,37 +626,139 @@ export default function SeasonDataPage() {
     setSaveError(null)
     setSaveSuccess(false)
     try {
-      const base = { season: season.trim(), team }
+      const seasonTrim = season.trim()
+      const base = { season: seasonTrim, team }
+
       for (const row of clubRows) {
-        if (row.apps > 0 || row.goals > 0 || row.assists > 0 || row.avgrating > 0) {
-          await postJson('/api/season_data', { ...base, ...row })
+        const finish = row.finish?.trim() ?? ''
+        const hasStats = seasonRowHasStats(row)
+        const body = {
+          ...base,
+          competition: row.competition,
+          apps: row.apps,
+          goals: row.goals,
+          assists: row.assists,
+          avgrating: row.avgrating,
+          finish,
+        }
+        if (row._id) {
+          if (!hasStats) {
+            await deleteJson(`/api/season_data/${row._id}`)
+          } else {
+            await putJson(`/api/season_data/${row._id}`, body)
+          }
+        } else if (hasStats) {
+          await postJson('/api/season_data', body)
         }
       }
-      for (const t of clubTrophies) {
-        await postJson('/api/season_trophies', { season: season.trim(), competition: t })
-      }
+
       for (const row of intRows) {
-        if (row.apps > 0 || row.goals > 0 || row.assists > 0 || row.avgrating > 0) {
-          await postJson('/api/int_data', { season: season.trim(), ...row })
+        const finish = row.finish?.trim() ?? ''
+        const hasStats = seasonRowHasStats(row)
+        const body = {
+          season: seasonTrim,
+          competition: row.competition,
+          apps: row.apps,
+          goals: row.goals,
+          assists: row.assists,
+          avgrating: row.avgrating,
+          finish,
+        }
+        if (row._id) {
+          if (!hasStats) {
+            await deleteJson(`/api/int_data/${row._id}`)
+          } else {
+            await putJson(`/api/int_data/${row._id}`, body)
+          }
+        } else if (hasStats) {
+          await postJson('/api/int_data', body)
         }
       }
-      for (const t of intTrophies) {
-        await postJson('/api/int_trophies', { season: season.trim(), competition: t })
-      }
-      for (const a of awards) {
-        if (a.award.trim()) {
-          const q = awardUsesQuantity(a.award)
-            ? Math.max(1, Math.floor(Number(a.quantity)) || 1)
-            : 1
-          await postJson('/api/season_awards', {
-            season: season.trim(),
-            award: a.award.trim(),
-            quantity: q,
+
+      if (seasonEditMode) {
+        const stList = (await apiFetch('/api/season_trophies').then((r) =>
+          r.json(),
+        )) as { _id?: string; season?: string }[]
+        for (const t of stList.filter((x) => String(x.season) === seasonTrim)) {
+          if (t._id) await deleteJson(`/api/season_trophies/${t._id}`)
+        }
+        for (const t of clubTrophies) {
+          await postJson('/api/season_trophies', {
+            season: seasonTrim,
+            competition: t,
           })
         }
+        const itList = (await apiFetch('/api/int_trophies').then((r) =>
+          r.json(),
+        )) as { _id?: string; season?: string }[]
+        for (const t of itList.filter((x) => String(x.season) === seasonTrim)) {
+          if (t._id) await deleteJson(`/api/int_trophies/${t._id}`)
+        }
+        for (const t of intTrophies) {
+          await postJson('/api/int_trophies', {
+            season: seasonTrim,
+            competition: t,
+          })
+        }
+        const awList = (await apiFetch('/api/season_awards').then((r) =>
+          r.json(),
+        )) as { _id?: string; season?: string }[]
+        for (const a of awList.filter((x) => String(x.season) === seasonTrim)) {
+          if (a._id) await deleteJson(`/api/season_awards/${a._id}`)
+        }
+        for (const a of awards) {
+          if (a.award.trim()) {
+            const q = awardUsesQuantity(a.award)
+              ? Math.max(1, Math.floor(Number(a.quantity)) || 1)
+              : 1
+            await postJson('/api/season_awards', {
+              season: seasonTrim,
+              award: a.award.trim(),
+              quantity: q,
+            })
+          }
+        }
+      } else {
+        for (const t of clubTrophies) {
+          await postJson('/api/season_trophies', {
+            season: seasonTrim,
+            competition: t,
+          })
+        }
+        for (const t of intTrophies) {
+          await postJson('/api/int_trophies', {
+            season: seasonTrim,
+            competition: t,
+          })
+        }
+        for (const a of awards) {
+          if (a.award.trim()) {
+            const q = awardUsesQuantity(a.award)
+              ? Math.max(1, Math.floor(Number(a.quantity)) || 1)
+              : 1
+            await postJson('/api/season_awards', {
+              season: seasonTrim,
+              award: a.award.trim(),
+              quantity: q,
+            })
+          }
+        }
       }
+
       setSaveSuccess(true)
       dataEntry.refresh()
+      if (seasonEditMode && team) {
+        try {
+          await loadExistingSeasonSnapshot(
+            seasonTrim,
+            team,
+            availableIntCompetitions,
+            availableIntTrophies,
+          )
+        } catch {
+          /* non-fatal */
+        }
+      }
     } catch (e: unknown) {
       setSaveError(e instanceof Error ? e.message : 'Save failed')
     } finally {
@@ -328,6 +783,8 @@ export default function SeasonDataPage() {
     setIntTrophies([])
     setAwards([])
     setSaveError(null)
+    setSeasonEditMode(false)
+    seasonHydratedRef.current = null
     if (team) initClubRows(team)
     setIntRows(
       availableIntCompetitions.map((c) => ({
@@ -336,7 +793,8 @@ export default function SeasonDataPage() {
         goals: 0,
         assists: 0,
         avgrating: 0,
-      }))
+        finish: '',
+      })),
     )
     setStep(1) // Back to Season step (keep team, enter new season)
   }
@@ -424,6 +882,12 @@ export default function SeasonDataPage() {
 
       <div className="season-main-card">
       <div className="season-content">
+        {seasonEditMode && step >= 2 && (
+          <p className="season-panel-sub season-edit-hint muted-text" role="status">
+            Editing saved data for this season. Changes are applied when you tap Save. Clear every stat and team placement
+            (league/cup finish) for a competition and save to remove that row.
+          </p>
+        )}
         {step === 0 && (
           <div className="season-step-panel">
             <h3 className="season-panel-title">Choose your club</h3>
@@ -464,7 +928,11 @@ export default function SeasonDataPage() {
               </div>
             )}
             <h3 className="season-panel-title">Which season?</h3>
-            <p className="season-panel-sub muted-text">Use the format <code className="season-code">XXXX/XX</code> — e.g. 2024/25</p>
+            <p className="season-panel-sub muted-text">
+              Use the format <code className="season-code">XXXX/XX</code> — e.g. 2024/25.
+              If this season is already saved, the next step loads it so you can edit stats, where the team finished in each
+              competition, trophies, and awards.
+            </p>
             <div className="season-field-wrap">
               <input
                 type="text"
@@ -472,7 +940,12 @@ export default function SeasonDataPage() {
                 placeholder="2024/25"
                 value={season}
                 onChange={(e) => setSeason(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleNext(); } }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleNext()
+                  }
+                }}
                 maxLength={7}
                 autoComplete="off"
                 spellCheck={false}
@@ -486,7 +959,9 @@ export default function SeasonDataPage() {
           <div className="season-step-panel">
             <h3 className="season-panel-title">Club competitions</h3>
             <p className="season-panel-sub muted-text">
-              Enter stats for each competition {team ? `(${TEAMS_SORTED_BY_LEAGUE.find((t) => t.id === team)?.label})` : ''}
+              Enter stats for each competition {team ? `(${TEAMS_SORTED_BY_LEAGUE.find((t) => t.id === team)?.label})` : ''}.
+              Use the fields below the numbers for <strong>where the club finished</strong> in that competition (league
+              position, cup run, etc.).
             </p>
             <div className="season-comp-grid">
               {clubRows.map((row, i) => (
@@ -506,7 +981,7 @@ export default function SeasonDataPage() {
                         type="number"
                         min={0}
                         value={row.apps || ''}
-                        onChange={(e) => updateClubRow(i, 'apps', parseInt(e.target.value, 10) || 0)}
+                        onChange={(e) => patchClubRow(i, { apps: parseInt(e.target.value, 10) || 0 })}
                       />
                     </label>
                     <label className="season-comp-stat">
@@ -515,7 +990,7 @@ export default function SeasonDataPage() {
                         type="number"
                         min={0}
                         value={row.goals || ''}
-                        onChange={(e) => updateClubRow(i, 'goals', parseInt(e.target.value, 10) || 0)}
+                        onChange={(e) => patchClubRow(i, { goals: parseInt(e.target.value, 10) || 0 })}
                       />
                     </label>
                     <label className="season-comp-stat">
@@ -524,7 +999,7 @@ export default function SeasonDataPage() {
                         type="number"
                         min={0}
                         value={row.assists || ''}
-                        onChange={(e) => updateClubRow(i, 'assists', parseInt(e.target.value, 10) || 0)}
+                        onChange={(e) => patchClubRow(i, { assists: parseInt(e.target.value, 10) || 0 })}
                       />
                     </label>
                     <label className="season-comp-stat">
@@ -534,10 +1009,17 @@ export default function SeasonDataPage() {
                         min={0}
                         step={0.01}
                         value={row.avgrating || ''}
-                        onChange={(e) => updateClubRow(i, 'avgrating', parseFloat(e.target.value) || 0)}
+                        onChange={(e) => patchClubRow(i, { avgrating: parseFloat(e.target.value) || 0 })}
                       />
                     </label>
                   </div>
+                  <CompetitionFinishField
+                    competitionId={row.competition}
+                    scope="club"
+                    clubTeamId={team ?? undefined}
+                    value={row.finish}
+                    onChange={(v) => patchClubRow(i, { finish: v })}
+                  />
                 </div>
               ))}
             </div>
@@ -575,6 +1057,8 @@ export default function SeasonDataPage() {
             <p className="season-panel-sub muted-text">
               Enter stats for national team competitions
               {nationalityLabel ? ` (${nationalityLabel})` : ''}.
+              The dropdowns below the numbers record <strong>how far the national team went</strong> (qualifying, tournament
+              stage, etc.).
               <span className="season-optional-hint"> Leave blank if you didn&apos;t play internationally.</span>
             </p>
             <div className="season-comp-grid">
@@ -595,7 +1079,7 @@ export default function SeasonDataPage() {
                         type="number"
                         min={0}
                         value={row.apps || ''}
-                        onChange={(e) => updateIntRow(i, 'apps', parseInt(e.target.value, 10) || 0)}
+                        onChange={(e) => patchIntRow(i, { apps: parseInt(e.target.value, 10) || 0 })}
                       />
                     </label>
                     <label className="season-comp-stat">
@@ -604,7 +1088,7 @@ export default function SeasonDataPage() {
                         type="number"
                         min={0}
                         value={row.goals || ''}
-                        onChange={(e) => updateIntRow(i, 'goals', parseInt(e.target.value, 10) || 0)}
+                        onChange={(e) => patchIntRow(i, { goals: parseInt(e.target.value, 10) || 0 })}
                       />
                     </label>
                     <label className="season-comp-stat">
@@ -613,7 +1097,7 @@ export default function SeasonDataPage() {
                         type="number"
                         min={0}
                         value={row.assists || ''}
-                        onChange={(e) => updateIntRow(i, 'assists', parseInt(e.target.value, 10) || 0)}
+                        onChange={(e) => patchIntRow(i, { assists: parseInt(e.target.value, 10) || 0 })}
                       />
                     </label>
                     <label className="season-comp-stat">
@@ -623,10 +1107,16 @@ export default function SeasonDataPage() {
                         min={0}
                         step={0.01}
                         value={row.avgrating || ''}
-                        onChange={(e) => updateIntRow(i, 'avgrating', parseFloat(e.target.value) || 0)}
+                        onChange={(e) => patchIntRow(i, { avgrating: parseFloat(e.target.value) || 0 })}
                       />
                     </label>
                   </div>
+                  <CompetitionFinishField
+                    competitionId={row.competition}
+                    scope="int"
+                    value={row.finish}
+                    onChange={(v) => patchIntRow(i, { finish: v })}
+                  />
                 </div>
               ))}
             </div>

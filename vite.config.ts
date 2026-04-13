@@ -1,8 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Dev CSP: Spline/WebGL + HMR. `unsafe-inline` on script-src is required so @vitejs/plugin-react can
+// inject its Fast Refresh preamble (blocked CSP was causing "can't detect preamble" and a blank #root).
 const devCsp =
-  "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' ws: wss: http://127.0.0.1:5000 http://localhost:5000 https:; frame-src https://app.spline.design https://*.spline.design https://*.splinetool.com https://*.splinecode.com"
+  "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' ws: wss: http://127.0.0.1:5000 http://localhost:5000 https:; frame-src https://app.spline.design https://*.spline.design https://*.splinetool.com https://*.splinecode.com"
 
 export default defineConfig({
   plugins: [react()],
