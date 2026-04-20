@@ -1,4 +1,13 @@
+import { formatFinishForDisplay } from '../config/seasonDataConfig'
 import type { IntDataRow, SeasonDataRow, YearlyDataRow } from '../types/dashboard'
+
+/** One season row may join multiple finish segments with " · ". */
+function expandFinishSegments(raw: string): string[] {
+  return String(raw ?? '')
+    .split(/\s*·\s*/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
 
 export type StatRow = { apps: number; goals: number; assists: number; avgrating?: number }
 
@@ -256,7 +265,22 @@ export type TeamCompRow = {
   goals: number
   assists: number
   avgrating?: number
-  finishesSummary?: string
+  /** How often the club ended with each stored finish for this competition (across seasons). */
+  finishCounts: { finish: string; count: number }[]
+}
+
+/** e.g. `5x Winner · 2x 3rd` — uses league ordinals where applicable. */
+export function formatFinishCountsForCompetitionDisplay(
+  competitionId: string,
+  counts: { finish: string; count: number }[],
+): string {
+  if (!counts.length) return ''
+  return counts
+    .map(
+      ({ finish, count }) =>
+        `${count}x ${formatFinishForDisplay(competitionId, finish)}`,
+    )
+    .join(' · ')
 }
 
 export type TeamWithBreakdown = {
@@ -279,7 +303,13 @@ export function statsByTeamWithBreakdown(rows: SeasonDataRow[]): TeamWithBreakdo
       ratings: number[]
       compMap: Map<
         string,
-        { apps: number; goals: number; assists: number; ratings: number[]; finishSet: Set<string> }
+        {
+          apps: number
+          goals: number
+          assists: number
+          ratings: number[]
+          finishCounts: Map<string, number>
+        }
       >
     }
   >()
@@ -298,7 +328,7 @@ export function statsByTeamWithBreakdown(rows: SeasonDataRow[]): TeamWithBreakdo
     const compKey = String(r.competition ?? '').trim() || '—'
     let compCur = teamCur.compMap.get(compKey)
     if (!compCur) {
-      compCur = { apps: 0, goals: 0, assists: 0, ratings: [], finishSet: new Set<string>() }
+      compCur = { apps: 0, goals: 0, assists: 0, ratings: [], finishCounts: new Map() }
       teamCur.compMap.set(compKey, compCur)
     }
     compCur.apps += Number(r.apps) || 0
@@ -306,7 +336,11 @@ export function statsByTeamWithBreakdown(rows: SeasonDataRow[]): TeamWithBreakdo
     compCur.assists += Number(r.assists) || 0
     if (r.avgrating != null && Number(r.avgrating) > 0) compCur.ratings.push(Number(r.avgrating))
     const f = r.finish != null && String(r.finish).trim() ? String(r.finish).trim() : ''
-    if (f) compCur.finishSet.add(f)
+    if (f) {
+      for (const seg of expandFinishSegments(f)) {
+        compCur.finishCounts.set(seg, (compCur.finishCounts.get(seg) ?? 0) + 1)
+      }
+    }
   }
   return Array.from(teamMap.entries())
     .map(([team, v]) => {
@@ -317,10 +351,12 @@ export function statsByTeamWithBreakdown(rows: SeasonDataRow[]): TeamWithBreakdo
           goals: c.goals,
           assists: c.assists,
           avgrating: c.ratings.length > 0 ? Math.round((c.ratings.reduce((a, b) => a + b, 0) / c.ratings.length) * 100) / 100 : undefined,
-          finishesSummary:
-            c.finishSet.size > 0
-              ? [...c.finishSet].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).join(' · ')
-              : undefined,
+          finishCounts: [...c.finishCounts.entries()]
+            .map(([finish, count]) => ({ finish, count }))
+            .sort((a, b) => {
+              if (b.count !== a.count) return b.count - a.count
+              return a.finish.localeCompare(b.finish, undefined, { numeric: true })
+            }),
         }))
         .sort((a, b) => b.goals + b.assists - (a.goals + a.assists))
       return {

@@ -50,7 +50,10 @@ import {
 } from "../components/stats/StatsAnalyticsCharts";
 import { useChartTheme } from "../hooks/useChartTheme";
 import { useStatsApi } from "../hooks/useStatsApi";
-import type { CompetitionStatsAggregate } from "../lib/statsAggregates";
+import {
+  type CompetitionStatsAggregate,
+  formatFinishCountsForCompetitionDisplay,
+} from "../lib/statsAggregates";
 import type { TrophyRow } from "../types/dashboard";
 
 const INT_TROPHY_LABELS: Record<string, string> = Object.fromEntries(
@@ -1826,7 +1829,8 @@ export default function StatsPage() {
               <div className="stats-section">
                 <h2 className="stats-section-title">By team</h2>
                 <p className="stats-section-sub muted-text">
-                  Club career split by each team with competition breakdown.
+                  Club career split by each team with competition breakdown. Finishes show how often
+                  the club placed each outcome (e.g. 5x Winner, 2x 3rd).
                 </p>
                 {api.byTeam.length > 0 ? (
                   <>
@@ -1886,7 +1890,7 @@ export default function StatsPage() {
                                     <thead>
                                       <tr>
                                         <th>Competition</th>
-                                        <th className="stats-team-finish-col">Finish</th>
+                                        <th className="stats-team-finish-col">Finishes</th>
                                         <th className="stats-team-num">Apps</th>
                                         <th className="stats-team-num">G</th>
                                         <th className="stats-team-num">A</th>
@@ -1922,11 +1926,11 @@ export default function StatsPage() {
                                               </span>
                                             </td>
                                             <td className="stats-team-finish-col">
-                                              {b.finishesSummary ? (
+                                              {b.finishCounts.length > 0 ? (
                                                 <span className="stats-team-finish-text">
-                                                  {formatFinishesSummaryForCompetition(
+                                                  {formatFinishCountsForCompetitionDisplay(
                                                     b.competition,
-                                                    b.finishesSummary,
+                                                    b.finishCounts,
                                                   )}
                                                 </span>
                                               ) : (
