@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   apiFetch,
@@ -17,6 +17,8 @@ type Credentials = {
 
 export type RegisterPayload = {
   username: string
+  name: string
+  email: string
   password: string
   securityQuestion: string
   securityAnswer: string
@@ -29,6 +31,8 @@ type AuthContextType = {
   login: (creds: Credentials) => Promise<void>
   register: (payload: RegisterPayload) => Promise<void>
   logout: () => void
+  /** Re-read user from localStorage after updating profile outside login/register. */
+  syncUserFromStorage: () => void
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -84,6 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
+  const syncUserFromStorage = useCallback(() => {
+    setToken(getAuthToken())
+    setUser(getStoredUser())
+  }, [])
+
   const value = useMemo<AuthContextType>(
     () => ({
       token,
@@ -92,8 +101,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
+      syncUserFromStorage,
     }),
-    [token, user]
+    [token, user, syncUserFromStorage]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

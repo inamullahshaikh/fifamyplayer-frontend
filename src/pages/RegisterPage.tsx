@@ -8,6 +8,8 @@ import { SECURITY_QUESTIONS } from '../config/securityQuestions'
 export default function RegisterPage() {
   const { register, isAuthenticated } = useAuth()
   const [username, setUsername] = useState('')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [securityQuestion, setSecurityQuestion] = useState(SECURITY_QUESTIONS[0] ?? '')
   const [securityAnswer, setSecurityAnswer] = useState('')
@@ -25,6 +27,8 @@ export default function RegisterPage() {
     try {
       await register({
         username,
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
         password,
         securityQuestion,
         securityAnswer: securityAnswer.trim(),
@@ -87,6 +91,34 @@ export default function RegisterPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   autoComplete="username"
+                  required
+                />
+              </div>
+
+              <div className="auth-field">
+                <label className="auth-field-label" htmlFor="reg-name">Display name</label>
+                <input
+                  id="reg-name"
+                  className="auth-input"
+                  type="text"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoComplete="name"
+                  required
+                />
+              </div>
+
+              <div className="auth-field">
+                <label className="auth-field-label" htmlFor="reg-email">Email</label>
+                <input
+                  id="reg-email"
+                  className="auth-input"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
                   required
                 />
               </div>

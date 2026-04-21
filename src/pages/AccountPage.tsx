@@ -1,16 +1,26 @@
 import { useEffect, useState } from 'react'
 import { SECURITY_QUESTIONS } from '../config/securityQuestions'
-import { apiFetch } from '../lib/api'
+import { useAuth } from '../auth/AuthContext'
+import { apiFetch, getAuthToken, setAuthSession, type AuthUser } from '../lib/api'
 
 type MeResponse = {
   username?: string
+  name?: string
+  email?: string
   hasSecurityRecovery?: boolean
   securityQuestion?: string | null
 }
 
 export default function AccountPage() {
+  const { user: authUser, syncUserFromStorage } = useAuth()
   const [me, setMe] = useState<MeResponse | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+
+  const [profileName, setProfileName] = useState('')
+  const [profileEmail, setProfileEmail] = useState('')
+  const [profileMsg, setProfileMsg] = useState<string | null>(null)
+  const [profileErr, setProfileErr] = useState<string | null>(null)
+  const [profileSaving, setProfileSaving] = useState(false)
 
   const [curPw, setCurPw] = useState('')
   const [newPw, setNewPw] = useState('')
@@ -32,7 +42,11 @@ export default function AccountPage() {
         const res = await apiFetch('/api/me')
         const data = (await res.json().catch(() => ({}))) as MeResponse & { error?: string }
         if (!res.ok) throw new Error(data.error || 'Could not load account')
-        if (!cancelled) setMe(data)
+        if (!cancelled) {
+          setMe(data)
+          setProfileName(data.name ?? '')
+          setProfileEmail(data.email ?? '')
+        }
       } catch (e) {
         if (!cancelled) setLoadError(e instanceof Error ? e.message : 'Failed to load')
       }
@@ -68,6 +82,55 @@ export default function AccountPage() {
       setPwErr(e instanceof Error ? e.message : 'Failed')
     } finally {
       setPwSaving(false)
+    }
+  }
+
+  const submitProfile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setProfileErr(null)
+    setProfileMsg(null)
+    setProfileSaving(true)
+    try {
+      const res = await apiFetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: profileName.trim(),
+          email: profileEmail.trim().toLowerCase(),
+        }),
+      })
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string
+        username?: string
+        name?: string
+        email?: string
+      }
+      if (!res.ok) throw new Error(data.error || 'Could not save profile')
+      setProfileMsg('Profile saved.')
+      setMe((m) =>
+        m
+          ? {
+              ...m,
+              username: data.username ?? m.username,
+              name: data.name ?? '',
+              email: data.email ?? '',
+            }
+          : m,
+      )
+      if (authUser) {
+        const next: AuthUser = {
+          id: authUser.id,
+          username: data.username ?? authUser.username,
+          name: data.name ?? profileName.trim(),
+          email: data.email ?? profileEmail.trim().toLowerCase(),
+        }
+        setAuthSession(getAuthToken(), next)
+        syncUserFromStorage()
+      }
+    } catch (e) {
+      setProfileErr(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setProfileSaving(false)
     }
   }
 
@@ -113,7 +176,9 @@ export default function AccountPage() {
               Settings
             </p>
             <h1 className="ph-title">Account</h1>
-            <p className="ph-desc">Password and password recovery for your VirtualXI login.</p>
+            <p className="ph-desc">
+              Profile, password, and recovery options for your VirtualXI login.
+            </p>
           </div>
         </div>
       </header>
@@ -131,6 +196,46 @@ export default function AccountPage() {
       )}
 
       <div className="account-settings-grid">
+        <div className="account-card">
+          <h2 className="account-card-title">Profile</h2>
+          <p className="account-card-desc">Your display name and email (used for notifications and password reset).</p>
+          <form className="auth-form account-inner-form" onSubmit={submitProfile}>
+            <div className="auth-field">
+              <label className="auth-field-label" htmlFor="acc-name">
+                Name
+              </label>
+              <input
+                id="acc-name"
+                className="auth-input"
+                type="text"
+                autoComplete="name"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="auth-field">
+              <label className="auth-field-label" htmlFor="acc-email">
+                Email
+              </label>
+              <input
+                id="acc-email"
+                className="auth-input"
+                type="email"
+                autoComplete="email"
+                value={profileEmail}
+                onChange={(e) => setProfileEmail(e.target.value)}
+                required
+              />
+            </div>
+            {profileErr && <div className="auth-error-box">{profileErr}</div>}
+            {profileMsg && <p className="account-success">{profileMsg}</p>}
+            <button type="submit" className="auth-btn" disabled={profileSaving}>
+              {profileSaving ? 'Saving…' : 'Save'}
+            </button>
+          </form>
+        </div>
+
         <div className="account-card">
           <h2 className="account-card-title">Change password</h2>
           <p className="account-card-desc">Use your current password to set a new one.</p>
