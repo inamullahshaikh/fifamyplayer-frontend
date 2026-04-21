@@ -8494,11 +8494,12 @@ html[data-theme="dark"] .tcab-physical-shelf {
 }
 
 .tcab-physical-row {
+  --tcab-col-gap: 8px;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: flex-start;
-  gap: 12px 20px;
+  gap: 10px var(--tcab-col-gap);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -8506,8 +8507,11 @@ html[data-theme="dark"] .tcab-physical-shelf {
 
 .tcab-physical-item {
   position: relative;
-  width: 84px;
-  flex-shrink: 0;
+  box-sizing: border-box;
+  flex: 0 0 calc((100% - 6 * var(--tcab-col-gap)) / 7);
+  width: calc((100% - 6 * var(--tcab-col-gap)) / 7);
+  max-width: calc((100% - 6 * var(--tcab-col-gap)) / 7);
+  min-width: 0;
   text-align: center;
   animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: calc(var(--tcab-p-i, 0) * 45ms + 40ms);
@@ -8523,8 +8527,8 @@ html[data-theme="dark"] .tcab-physical-shelf {
 
 .tcab-physical-figure {
   position: relative;
-  height: 72px;
-  margin: 0 auto 8px;
+  height: 64px;
+  margin: 0 auto 6px;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   background: #fff;
@@ -8552,8 +8556,8 @@ html[data-theme="dark"] .tcab-physical-figure {
 }
 
 .tcab-physical-img {
-  max-width: 48px;
-  max-height: 48px;
+  max-width: 40px;
+  max-height: 40px;
   width: auto;
   height: auto;
   object-fit: contain;
@@ -8567,27 +8571,8 @@ html[data-theme="dark"] .tcab-physical-figure {
   letter-spacing: 0.02em;
 }
 
-.tcab-physical-count {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 1.25rem;
-  height: 1.25rem;
-  padding: 0 5px;
-  border-radius: 6px;
-  font-size: 0.62rem;
-  font-weight: 900;
-  line-height: 1.25rem;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  background: var(--text-1);
-  color: var(--bg);
-  box-shadow: 0 2px 6px color-mix(in srgb, #000000 18%, transparent);
-}
-
-html[data-theme="dark"] .tcab-physical-count {
-  background: var(--green);
-  color: #0f172a;
+.tcab-physical-captions {
+  margin-top: 2px;
 }
 
 .tcab-physical-name {
@@ -8602,23 +8587,34 @@ html[data-theme="dark"] .tcab-physical-count {
   overflow: hidden;
 }
 
+.tcab-physical-season {
+  margin: 3px 0 0;
+  font-size: 0.58rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 @media (max-width: 520px) {
-  .tcab-physical-item {
-    width: 78px;
+  .tcab-physical-row {
+    --tcab-col-gap: 4px;
   }
 
   .tcab-physical-figure {
-    height: 66px;
-    padding: 8px;
+    height: 56px;
+    padding: 6px;
   }
 
   .tcab-physical-img {
-    max-width: 42px;
-    max-height: 42px;
+    max-width: 32px;
+    max-height: 32px;
   }
 
-  .tcab-physical-row {
-    gap: 10px 14px;
+  .tcab-physical-name {
+    font-size: 0.6rem;
+  }
+
+  .tcab-physical-season {
+    font-size: 0.52rem;
   }
 }
 

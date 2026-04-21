@@ -1,8 +1,5 @@
 import { useMemo, type CSSProperties, type SVGProps } from "react";
-import {
-  CLUB_TROPHY_LABEL,
-  INT_TROPHIES,
-} from "../config/seasonDataConfig";
+import { CLUB_TROPHY_LABEL, INT_TROPHIES } from "../config/seasonDataConfig";
 import { IconTrophyClub } from "./dashboard/AchievementIcons";
 import { getTrophyLogo } from "../config/seasonAssets";
 import type { TrophyRow } from "../types/dashboard";
@@ -15,51 +12,132 @@ const INT_LABEL: Record<string, string> = Object.fromEntries(
 type CabinetItem = {
   key: string;
   trophyId: string;
-  count: number;
   scope: "club" | "int";
   label: string;
+  season?: string;
 };
 
-const SHELF_CAPACITY = 5;
+/** Seven trophies per shelf row. */
+const SHELF_CAPACITY = 7;
+
+/** Top-five domestic league winner trophies (ids as stored on rows, with or without `-trophy`). */
+const LEAGUE_TROPHY_BASE_IDS = ["ll", "pl", "bl", "sa", "l1"] as const;
+
+/** UEFA / continental club competitions (ids with or without `-trophy`). */
+const CONTINENTAL_TROPHY_BASE_IDS = [
+  "ucl",
+  "uel",
+  "uecl",
+  "uesc",
+  "usc",
+] as const;
+
+/** Domestic cups & super cups (club), after league + continental. */
+const DOMESTIC_CUP_BASE_IDS = [
+  "fa",
+  "efl",
+  "cs",
+  "cdr",
+  "sde",
+  "dfb",
+  "dfl",
+  "ci",
+  "si",
+  "cdf",
+  "tdc",
+] as const;
+
+const INT_TROPHY_ORDER: readonly string[] = INT_TROPHIES.map((t) => t.id);
+
+function normalizeTrophyBaseId(trophyId: string): string {
+  return String(trophyId ?? "")
+    .trim()
+    .replace(/-trophy$/i, "")
+    .toLowerCase();
+}
+
+/** 0 = international, 1 = league, 2 = continental, 3 = domestic cups & other. */
+function cabinetTrophyKindRank(
+  scope: "club" | "int",
+  trophyId: string,
+): 0 | 1 | 2 | 3 {
+  if (scope === "int") return 0;
+  const base = normalizeTrophyBaseId(trophyId);
+  if ((LEAGUE_TROPHY_BASE_IDS as readonly string[]).includes(base)) return 1;
+  if ((CONTINENTAL_TROPHY_BASE_IDS as readonly string[]).includes(base))
+    return 2;
+  return 3;
+}
+
+/** Lower = earlier within the same kind tier (international / league / continental / domestic). */
+function trophySecondarySortIndex(
+  scope: "club" | "int",
+  trophyId: string,
+  kind: 0 | 1 | 2 | 3,
+): number {
+  const raw = String(trophyId ?? "").trim();
+  const base = normalizeTrophyBaseId(trophyId);
+  if (scope === "int") {
+    const i = INT_TROPHY_ORDER.indexOf(raw);
+    return i === -1 ? INT_TROPHY_ORDER.length + 100 : i;
+  }
+  if (kind === 1) {
+    const i = (LEAGUE_TROPHY_BASE_IDS as readonly string[]).indexOf(base);
+    return i === -1 ? 100 : i;
+  }
+  if (kind === 2) {
+    const i = (CONTINENTAL_TROPHY_BASE_IDS as readonly string[]).indexOf(base);
+    return i === -1 ? 100 : i;
+  }
+  const i = (DOMESTIC_CUP_BASE_IDS as readonly string[]).indexOf(base);
+  return i === -1 ? 500 : i;
+}
 
 function buildCabinetItems(
   club: TrophyRow[],
   intl: TrophyRow[],
 ): CabinetItem[] {
-  const clubM = new Map<string, number>();
+  const out: CabinetItem[] = [];
+  let idx = 0;
   for (const r of club) {
     const id = String(r.competition ?? "").trim();
     if (!id) continue;
-    clubM.set(id, (clubM.get(id) ?? 0) + 1);
+    const season = String(r.season ?? "").trim() || undefined;
+    out.push({
+      key: String(r._id ?? `club-${id}-${season ?? "na"}-${idx++}`),
+      trophyId: id,
+      scope: "club",
+      label: CLUB_LABEL[id] ?? id,
+      season,
+    });
   }
-  const intM = new Map<string, number>();
   for (const r of intl) {
     const id = String(r.competition ?? "").trim();
     if (!id) continue;
-    intM.set(id, (intM.get(id) ?? 0) + 1);
-  }
-  const out: CabinetItem[] = [];
-  for (const [trophyId, count] of clubM) {
+    const season = String(r.season ?? "").trim() || undefined;
     out.push({
-      key: `club-${trophyId}`,
-      trophyId,
-      count,
-      scope: "club",
-      label: CLUB_LABEL[trophyId] ?? trophyId,
-    });
-  }
-  for (const [trophyId, count] of intM) {
-    out.push({
-      key: `int-${trophyId}`,
-      trophyId,
-      count,
+      key: String(r._id ?? `int-${id}-${season ?? "na"}-${idx++}`),
+      trophyId: id,
       scope: "int",
-      label: INT_LABEL[trophyId] ?? trophyId,
+      label: INT_LABEL[id] ?? id,
+      season,
     });
   }
-  out.sort(
-    (a, b) => b.count - a.count || a.label.localeCompare(b.label),
-  );
+  out.sort((a, b) => {
+    const ra = cabinetTrophyKindRank(a.scope, a.trophyId);
+    const rb = cabinetTrophyKindRank(b.scope, b.trophyId);
+    if (ra !== rb) return ra - rb;
+    const ia = trophySecondarySortIndex(a.scope, a.trophyId, ra);
+    const ib = trophySecondarySortIndex(b.scope, b.trophyId, rb);
+    if (ia !== ib) return ia - ib;
+    const sa = a.season ?? "";
+    const sb = b.season ?? "";
+    const bySeason = sb.localeCompare(sa, undefined, { numeric: true });
+    if (bySeason !== 0) return bySeason;
+    const byLabel = a.label.localeCompare(b.label);
+    if (byLabel !== 0) return byLabel;
+    return a.key.localeCompare(b.key);
+  });
   return out;
 }
 
@@ -92,9 +170,6 @@ export function TrophyPhysicalCabinet({
             <IconTrophyClub className="tcab-physical-title-ic" aria-hidden />
             Trophy cabinet
           </h2>
-          <p className="tcab-physical-desc muted-text">
-            Most-won competitions first. Blue accent = club, violet = international.
-          </p>
         </div>
 
         <div className="tcab-physical-shelves">
@@ -110,7 +185,11 @@ export function TrophyPhysicalCabinet({
                       className="tcab-physical-item"
                       data-scope={item.scope}
                       style={{ "--tcab-p-i": globalI } as CSSProperties}
-                      title={`${item.label} — ${item.count}×`}
+                      title={
+                        item.season
+                          ? `${item.label} — ${item.season}`
+                          : item.label
+                      }
                     >
                       <div className="tcab-physical-figure">
                         {logo ? (
@@ -121,18 +200,19 @@ export function TrophyPhysicalCabinet({
                             loading="lazy"
                           />
                         ) : (
-                          <span
-                            className="tcab-physical-fallback"
-                            aria-hidden
-                          >
+                          <span className="tcab-physical-fallback" aria-hidden>
                             {item.label.slice(0, 2)}
                           </span>
                         )}
-                        <span className="tcab-physical-count">
-                          {item.count}
-                        </span>
                       </div>
-                      <p className="tcab-physical-name">{item.label}</p>
+                      <div className="tcab-physical-captions">
+                        <p className="tcab-physical-name">{item.label}</p>
+                        {item.season ? (
+                          <p className="tcab-physical-season muted-text">
+                            {item.season}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
                   );
                 })}
@@ -146,9 +226,7 @@ export function TrophyPhysicalCabinet({
 }
 
 /** Empty cabinet wireframe for zero-state on the trophy cabinet page. */
-export function EmptyTrophyCabinetIllustration(
-  props: SVGProps<SVGSVGElement>,
-) {
+export function EmptyTrophyCabinetIllustration(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
       viewBox="0 0 320 200"
@@ -169,13 +247,7 @@ export function EmptyTrophyCabinetIllustration(
           <stop offset="50%" stopColor="#3d2817" />
           <stop offset="100%" stopColor="#2a1a0e" />
         </linearGradient>
-        <linearGradient
-          id="tcab-empty-glass"
-          x1="0%"
-          y1="0%"
-          x2="0%"
-          y2="100%"
-        >
+        <linearGradient id="tcab-empty-glass" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="rgba(255,255,255,0.07)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
         </linearGradient>
